@@ -1,0 +1,10 @@
+xcuserdata/
+DerivedData/
+.DS_Store
+*.xcuserstate
+*.xccheckout
+.build/
+Proxy/node_modules/
+Proxy/.wrangler/
+Proxy/.dev.vars
+PlantCompanion.xcodeproj/project.xcworkspace/xcuserdata/

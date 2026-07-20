@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "Plant Companion Mockup",
+    "slug": "plant-companion-mockup",
+    "version": "0.1.0",
+    "orientation": "default",
+    "scheme": "plantcompanionmock",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.example.PlantCompanionMockup"
+    },
+    "android": {
+      "package": "com.example.plantcompanionmockup",
+      "adaptiveIcon": {
+        "backgroundColor": "#EAF2E5"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "name": "Plant Companion Mockup"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose a plant photo for this interactive mockup.",
+          "cameraPermission": "Take a plant photo for this interactive mockup."
+        }
+      ],
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
