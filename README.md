@@ -1,5 +1,7 @@
 # Plant Companion
 
+[![CI](https://github.com/seandmoore/plant-habit-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/seandmoore/plant-habit-tracker/actions/workflows/ci.yml)
+
 Plant Companion is a hobby-friendly SwiftUI app for keeping a plant collection, logging care habits, getting explainable soil-check reminders, identifying plants from photos, and talking with a grounded on-device companion.
 
 An independent universal React/Expo preview is available in [`ReactMockup/`](ReactMockup/README.md). It runs on web, iOS, and Android with local sample data and does not replace the native app.
