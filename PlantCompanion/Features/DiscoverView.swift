@@ -9,55 +9,59 @@ struct DiscoverView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if let error = errorMessage {
-                    ContentUnavailableView("Catalog unavailable", systemImage: "wifi.exclamationmark", description: Text(error))
-                } else if results.isEmpty && isSearching {
-                    ProgressView("Searching plants…")
-                } else {
-                    List(results) { species in
-                        NavigationLink {
-                            SpeciesDetailView(species: species)
-                        } label: {
-                            HStack(spacing: 14) {
-                                ZStack {
-                                    PlantTheme.mint.gradient
-                                    Image(systemName: species.symbolName)
-                                        .foregroundStyle(PlantTheme.moss)
-                                }
-                                .frame(width: 58, height: 58)
-                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                                .accessibilityHidden(true)
+            content
+                .plantPage()
+                .navigationTitle("Discover")
+                .searchable(text: $query, prompt: "Common or scientific name")
+                .onSubmit(of: .search) { search() }
+                .onChange(of: query) { _, newValue in
+                    if newValue.isEmpty { search() }
+                }
+                .task {
+                    if results.isEmpty { results = appModel.catalog }
+                }
+                .refreshable { await searchCatalog() }
+        }
+    }
 
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(species.commonName).font(.headline)
-                                    Text(species.scientificName)
-                                        .font(.subheadline)
-                                        .italic()
-                                        .foregroundStyle(.secondary)
-                                    Text(species.summary)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(2)
-                                }
-                            }
-                            .padding(.vertical, 4)
+    @ViewBuilder
+    private var content: some View {
+        if let error = errorMessage {
+            ContentUnavailableView("Catalog unavailable", systemImage: "wifi.exclamationmark", description: Text(error))
+        } else if results.isEmpty && isSearching {
+            ProgressView("Searching plants…")
+        } else {
+            List(results) { species in
+                NavigationLink {
+                    SpeciesDetailView(species: species)
+                } label: {
+                    HStack(spacing: 14) {
+                        ZStack {
+                            Rectangle()
+                                .fill(PlantTheme.mint.gradient)
+                            Image(systemName: species.symbolName)
+                                .foregroundStyle(PlantTheme.moss)
+                        }
+                        .frame(width: 58, height: 58)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .accessibilityHidden(true)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(species.commonName).font(.headline)
+                            Text(species.scientificName)
+                                .font(.subheadline)
+                                .italic()
+                                .foregroundStyle(.secondary)
+                            Text(species.summary)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
                         }
                     }
-                    .scrollContentBackground(.hidden)
+                    .padding(.vertical, 4)
                 }
             }
-            .plantPage()
-            .navigationTitle("Discover")
-            .searchable(text: $query, prompt: "Common or scientific name")
-            .onSubmit(of: .search) { search() }
-            .onChange(of: query) { _, newValue in
-                if newValue.isEmpty { search() }
-            }
-            .task {
-                if results.isEmpty { results = appModel.catalog }
-            }
-            .refreshable { await searchCatalog() }
+            .scrollContentBackground(.hidden)
         }
     }
 

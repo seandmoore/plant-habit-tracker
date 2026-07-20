@@ -37,7 +37,8 @@ struct PlantArtwork: View {
 
     private var placeholder: some View {
         ZStack {
-            PlantTheme.mint.gradient
+            Rectangle()
+                .fill(PlantTheme.mint.gradient)
             Image(systemName: "leaf.fill")
                 .font(.system(size: size * 0.38, weight: .medium))
                 .foregroundStyle(PlantTheme.moss)
