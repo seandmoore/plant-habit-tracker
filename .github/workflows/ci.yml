@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  javascript:
+    name: Expo and proxy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ReactMockup/package-lock.json
+
+      - name: Install Expo dependencies
+        working-directory: ReactMockup
+        run: npm ci
+
+      - name: Typecheck Expo preview
+        working-directory: ReactMockup
+        run: npm run typecheck
+
+      - name: Test Expo preview
+        working-directory: ReactMockup
+        run: npm test -- --runInBand
+
+      - name: Test Worker proxy
+        working-directory: Proxy
+        run: npm test
+
+  native:
+    name: SwiftUI app
+    runs-on: macos-26
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Test native app
+        run: >-
+          xcodebuild test
+          -project PlantCompanion.xcodeproj
+          -scheme PlantCompanion
+          -destination 'platform=macOS'
+          CODE_SIGNING_ALLOWED=NO
