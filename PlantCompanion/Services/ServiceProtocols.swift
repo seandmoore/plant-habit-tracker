@@ -26,6 +26,7 @@ protocol NotificationScheduling: Sendable {
 enum PlantServiceError: LocalizedError {
     case invalidConfiguration
     case invalidResponse
+    case imageTooLarge
     case requestFailed(String)
     case featureUnavailable
 
@@ -33,6 +34,7 @@ enum PlantServiceError: LocalizedError {
         switch self {
         case .invalidConfiguration: "This service has not been configured yet."
         case .invalidResponse: "The plant service returned an unreadable response."
+        case .imageTooLarge: "Choose a photo smaller than 10 MB."
         case .requestFailed(let message): message
         case .featureUnavailable: "This feature is not available on this device."
         }

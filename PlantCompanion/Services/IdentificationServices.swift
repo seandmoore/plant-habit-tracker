@@ -30,6 +30,7 @@ actor MockIdentificationService: IdentificationService {
 }
 
 actor ProxyIdentificationService: IdentificationService {
+    private static let maximumImageBytes = 10 * 1024 * 1024
     private let baseURL: URL
     private let session: URLSession
 
@@ -39,6 +40,9 @@ actor ProxyIdentificationService: IdentificationService {
     }
 
     func identify(imageData: Data, mode: ScanMode) async throws -> [ScanCandidate] {
+        guard !imageData.isEmpty else { throw PlantServiceError.invalidResponse }
+        guard imageData.count <= Self.maximumImageBytes else { throw PlantServiceError.imageTooLarge }
+
         let endpoint = baseURL.appending(path: "v1/identify")
         var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
         components?.queryItems = [URLQueryItem(name: "mode", value: mode.rawValue)]
@@ -46,7 +50,9 @@ actor ProxyIdentificationService: IdentificationService {
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        request.timeoutInterval = 20
         request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+        request.setValue(String(imageData.count), forHTTPHeaderField: "Content-Length")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
         let (data, response) = try await session.upload(for: request, from: imageData)

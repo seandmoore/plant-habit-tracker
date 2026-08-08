@@ -41,4 +41,6 @@ For a physical phone, run `npm start` and open the QR code in Expo Go. The iOS s
 
 No account or API credential is required. Scanner photos remain local and produce deterministic sample results. The companion uses scripted replies grounded in local mock data. Use Demo Settings to restore the original plants, clear the collection, replay onboarding, or switch appearance.
 
+AsyncStorage is used only for non-secret preview data. Do not store API keys, session tokens, or other credentials there if the mockup later gains accounts; use the platform keychain through a maintained secure-storage package.
+
 If this mockup later connects to the included Pl@ntNet proxy, keep the “possibility, not diagnosis” language and continue to protect the provider key server-side.
