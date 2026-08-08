@@ -25,6 +25,19 @@ final class ServiceTests: XCTestCase {
         XCTAssertTrue(results.allSatisfy { (0.0...1.0).contains($0.confidence) })
     }
 
+    func testProxyScannerRejectsOversizedImageBeforeNetworkRequest() async throws {
+        let service = ProxyIdentificationService(baseURL: try XCTUnwrap(URL(string: "https://proxy.example")))
+
+        do {
+            _ = try await service.identify(imageData: Data(count: 10 * 1024 * 1024 + 1), mode: .species)
+            XCTFail("Expected an oversized image error")
+        } catch PlantServiceError.imageTooLarge {
+            // Expected.
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
     func testScriptedCompanionDoesNotPresentHealthSuggestionAsDiagnosis() async throws {
         let response = try await ScriptedCompanionService().respond(
             to: CompanionPrompt(question: "Why are the leaves yellow?", plantName: "Moss", groundedFacts: [])

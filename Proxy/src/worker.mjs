@@ -1,5 +1,6 @@
 const PLANTNET_ORIGIN = "https://my-api.plantnet.org";
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const UPSTREAM_TIMEOUT_MS = 15_000;
 
 export default {
   async fetch(request, env) {
@@ -27,14 +28,15 @@ export default {
       return json({ error: "unsupported_image_type" }, 415);
     }
 
-    const declaredLength = Number(request.headers.get("content-length") || 0);
-    if (declaredLength > MAX_IMAGE_BYTES) {
-      return json({ error: "image_too_large" }, 413);
-    }
-
-    const image = await request.arrayBuffer();
-    if (image.byteLength === 0 || image.byteLength > MAX_IMAGE_BYTES) {
-      return json({ error: image.byteLength === 0 ? "empty_image" : "image_too_large" }, image.byteLength === 0 ? 400 : 413);
+    const contentLength = request.headers.get("content-length");
+    if (contentLength !== null) {
+      const declaredLength = Number(contentLength);
+      if (!Number.isSafeInteger(declaredLength) || declaredLength < 0) {
+        return json({ error: "invalid_content_length" }, 400);
+      }
+      if (declaredLength > MAX_IMAGE_BYTES) {
+        return json({ error: "image_too_large" }, 413);
+      }
     }
 
     const requestCost = mode === "both" ? 2 : 1;
@@ -44,6 +46,22 @@ export default {
       if (!success) {
         return json({ error: "rate_limited" }, 429, { "Retry-After": "60" });
       }
+    }
+
+    let image;
+    try {
+      image = await readBodyWithLimit(request.body, MAX_IMAGE_BYTES);
+    } catch (error) {
+      if (error instanceof PayloadTooLargeError) {
+        return json({ error: "image_too_large" }, 413);
+      }
+      throw error;
+    }
+    if (image.byteLength === 0) {
+      return json({ error: "empty_image" }, 400);
+    }
+    if (!hasValidImageSignature(image, contentType)) {
+      return json({ error: "invalid_image_data" }, 415);
     }
 
     try {
@@ -91,6 +109,7 @@ async function plantNetImageRequest(path, image, contentType) {
     method: "POST",
     body: form,
     headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
   });
   if (!response.ok) {
     throw new UpstreamError(response.status);
@@ -139,11 +158,55 @@ function json(value, status = 200, extraHeaders = {}) {
     status,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      "Referrer-Policy": "no-referrer",
       "X-Content-Type-Options": "nosniff",
       ...extraHeaders,
     },
   });
 }
+
+export async function readBodyWithLimit(body, maxBytes) {
+  if (!body) return new Uint8Array();
+
+  const reader = body.getReader();
+  const output = new Uint8Array(maxBytes);
+  let length = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = value instanceof Uint8Array ? value : new Uint8Array(value);
+      if (length + chunk.byteLength > maxBytes) {
+        await reader.cancel("payload_too_large");
+        throw new PayloadTooLargeError();
+      }
+      output.set(chunk, length);
+      length += chunk.byteLength;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  return output.subarray(0, length);
+}
+
+export function hasValidImageSignature(image, contentType) {
+  if (contentType === "image/jpeg") {
+    return image.byteLength >= 3
+      && image[0] === 0xff
+      && image[1] === 0xd8
+      && image[2] === 0xff;
+  }
+
+  const pngSignature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  return image.byteLength >= pngSignature.length
+    && pngSignature.every((byte, index) => image[index] === byte);
+}
+
+class PayloadTooLargeError extends Error {}
 
 class UpstreamError extends Error {
   constructor(status) {

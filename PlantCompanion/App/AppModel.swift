@@ -136,7 +136,7 @@ final class AppModel {
     private static func makeIdentificationService() -> any IdentificationService {
         if let rawURL = Bundle.main.object(forInfoDictionaryKey: "PLANTNET_PROXY_URL") as? String,
            !rawURL.isEmpty,
-           let url = URL(string: rawURL) {
+           let url = secureServiceURL(from: rawURL) {
             return ProxyIdentificationService(baseURL: url)
         }
         return MockIdentificationService()
@@ -146,9 +146,18 @@ final class AppModel {
         let starter = StarterCatalogService()
         if let rawURL = Bundle.main.object(forInfoDictionaryKey: "PLANTNET_PROXY_URL") as? String,
            !rawURL.isEmpty,
-           let url = URL(string: rawURL) {
+           let url = secureServiceURL(from: rawURL) {
             return ResilientCatalogService(primary: ProxyPlantCatalogService(baseURL: url), fallback: starter)
         }
         return starter
+    }
+
+    private static func secureServiceURL(from rawValue: String) -> URL? {
+        guard let url = URL(string: rawValue),
+              url.scheme?.lowercased() == "https",
+              url.host != nil else {
+            return nil
+        }
+        return url
     }
 }
