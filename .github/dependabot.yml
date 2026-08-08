@@ -19,6 +19,26 @@ updates:
       expo-preview:
         patterns:
           - "*"
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Coordinate these breaking upgrades with the matching Expo SDK release.
+      - dependency-name: "@react-native-async-storage/async-storage"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "@testing-library/react-native"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "@types/jest"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: jest
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: typescript
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: npm
     directory: /Proxy
@@ -29,3 +49,6 @@ updates:
       worker-proxy:
         patterns:
           - "*"
+        update-types:
+          - minor
+          - patch
