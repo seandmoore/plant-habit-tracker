@@ -15,6 +15,8 @@ struct ScannerView: View {
     @State private var errorMessage: String?
     @State private var isShowingCamera = false
     @State private var speciesToAdd: PlantSpecies?
+    @State private var activePhotoLoadID: UUID?
+    @State private var activeScanID: UUID?
 
     var body: some View {
         NavigationStack {
@@ -66,6 +68,7 @@ struct ScannerView: View {
                 ForEach(ScanMode.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
+            .disabled(isScanning)
 
             Group {
                 if let imageData {
@@ -94,12 +97,13 @@ struct ScannerView: View {
                 #if os(iOS)
                 Button("Camera", systemImage: "camera.fill") { isShowingCamera = true }
                     .buttonStyle(.borderedProminent)
-                    .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
+                    .disabled(isScanning || !UIImagePickerController.isSourceTypeAvailable(.camera))
                 #endif
                 PhotosPicker(selection: $photoItem, matching: .images) {
                     Label("Photo Library", systemImage: "photo.on.rectangle")
                 }
                 .buttonStyle(.bordered)
+                .disabled(isScanning)
                 if imageData != nil {
                     Button("Scan again", systemImage: "arrow.clockwise") { scan() }
                         .buttonStyle(.bordered)
@@ -152,13 +156,23 @@ struct ScannerView: View {
 
     private func load(_ item: PhotosPickerItem?) {
         guard let item else { return }
+        let loadID = UUID()
+        activePhotoLoadID = loadID
         Task {
             do {
-                if let data = try await item.loadTransferable(type: Data.self) {
-                    imageData = ImageDataNormalizer.jpegData(from: data) ?? data
+                guard let data = try await item.loadTransferable(type: Data.self) else {
+                    guard activePhotoLoadID == loadID else { return }
+                    activePhotoLoadID = nil
+                    errorMessage = "That image could not be opened."
+                    return
                 }
+                guard activePhotoLoadID == loadID else { return }
+                activePhotoLoadID = nil
+                imageData = ImageDataNormalizer.jpegData(from: data) ?? data
                 scan()
             } catch {
+                guard activePhotoLoadID == loadID else { return }
+                activePhotoLoadID = nil
                 errorMessage = "That image could not be opened."
             }
         }
@@ -166,15 +180,25 @@ struct ScannerView: View {
 
     private func scan() {
         guard let imageData else { return }
+        let scanID = UUID()
+        let requestedMode = mode
+        activeScanID = scanID
         isScanning = true
         results = []
         errorMessage = nil
         Task {
             do {
-                results = try await appModel.identificationService.identify(imageData: imageData, mode: mode)
+                let newResults = try await appModel.identificationService.identify(
+                    imageData: imageData,
+                    mode: requestedMode
+                )
+                guard activeScanID == scanID else { return }
+                results = newResults
             } catch {
+                guard activeScanID == scanID else { return }
                 errorMessage = error.localizedDescription
             }
+            activeScanID = nil
             isScanning = false
         }
     }
