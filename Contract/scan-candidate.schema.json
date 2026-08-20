@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://plant-companion.example/contract/scan-candidate.schema.json",
+  "title": "ScanCandidate array",
+  "description": "Response body of POST /v1/identify. Every consumer decodes exactly this shape; nothing from the upstream provider is passed through unmapped.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "title", "confidence", "detail", "source"],
+    "additionalProperties": false,
+    "properties": {
+      "id": { "type": "string", "minLength": 1, "description": "Stable identifier for this candidate within one response." },
+      "title": { "type": "string", "minLength": 1, "description": "Human-readable candidate name. For health results, the observation, never a diagnosis." },
+      "scientificName": { "type": ["string", "null"], "description": "Binomial name when the candidate is a species; null for health observations." },
+      "confidence": { "type": "number", "minimum": 0, "maximum": 1, "description": "Normalized score. Presented to people as a possibility, never as certainty." },
+      "detail": { "type": "string", "description": "Supporting context and the limits of the result." },
+      "source": { "type": "string", "minLength": 1, "description": "Attribution for where the suggestion came from." }
+    }
+  }
+}

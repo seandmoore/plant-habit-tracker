@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
+    "sync:catalog": "node scripts/sync-catalog.mjs",
     "test": "node --test",
     "deploy": "wrangler deploy"
   },
