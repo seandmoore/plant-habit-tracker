@@ -3,6 +3,8 @@ export type LightLevel = 'low' | 'medium' | 'brightIndirect' | 'direct';
 export type WaterUnit = 'mL' | 'fl oz';
 export type CareEventKind = 'watered' | 'fertilized' | 'pruned' | 'repotted' | 'healthNote';
 export type ScanMode = 'species' | 'health' | 'both';
+export type ColorMode = 'system' | 'light' | 'dark';
+export type RecommendationStatus = 'overdue' | 'dueToday' | 'upcoming';
 
 export interface PlantSpecies {
   id: string;
@@ -45,8 +47,6 @@ export interface UserPlant {
   careEvents: CareEvent[];
 }
 
-export type RecommendationStatus = 'overdue' | 'dueToday' | 'upcoming';
-
 export interface CareRecommendation {
   plantId: string;
   dueDate: string;
@@ -71,11 +71,12 @@ export interface CompanionMessage {
   text: string;
 }
 
-export type ColorMode = 'system' | 'light' | 'dark';
-
-export interface PersistedPlantState {
-  version: 1;
-  plants: UserPlant[];
-  hasCompletedOnboarding: boolean;
-  colorMode: ColorMode;
+/**
+ * The care queue pairs a plant with the recommendation derived from it. Screens render this
+ * rather than recomputing recommendations inline, which is what keeps ordering consistent
+ * between the Today list and the collection cards.
+ */
+export interface CareQueueEntry {
+  plant: UserPlant;
+  recommendation: CareRecommendation;
 }
