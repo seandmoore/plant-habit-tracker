@@ -1,0 +1,227 @@
+{
+  "version": 1,
+  "description": "Golden vectors for the watering planner. Every implementation must reproduce these exactly. Dates are local calendar dates built from their components, so the vectors stay timezone independent.",
+  "vectors": [
+    {
+      "name": "indoor medium plant in a neutral month uses the species baseline",
+      "input": {
+        "baselineWateringDays": 10,
+        "environment": "indoor",
+        "light": "medium",
+        "anchorDate": "2026-03-01",
+        "asOfDate": "2026-03-01"
+      },
+      "expected": {
+        "intervalDays": 10,
+        "dueDate": "2026-03-11",
+        "status": "upcoming",
+        "title": "Check soil in 10 days",
+        "reason": "Based on its starting interval and the fact that it is kept indoors. Feel the soil before watering."
+      }
+    },
+    {
+      "name": "outdoor container in direct summer sun dries fastest",
+      "input": {
+        "baselineWateringDays": 10,
+        "environment": "outdoorContainer",
+        "light": "direct",
+        "anchorDate": "2026-07-10",
+        "asOfDate": "2026-07-10"
+      },
+      "expected": {
+        "intervalDays": 4,
+        "dueDate": "2026-07-14",
+        "status": "upcoming",
+        "title": "Check soil in 4 days",
+        "reason": "Based on its starting interval and the fact that it is an outdoor pot can dry faster, direct sun can dry soil faster, it is the warmer part of the year. Feel the soil before watering."
+      }
+    },
+    {
+      "name": "low light indoor plant stretches in winter",
+      "input": {
+        "baselineWateringDays": 10,
+        "environment": "indoor",
+        "light": "low",
+        "anchorDate": "2026-12-01",
+        "asOfDate": "2026-12-01"
+      },
+      "expected": {
+        "intervalDays": 14,
+        "dueDate": "2026-12-15",
+        "status": "upcoming",
+        "title": "Check soil in 14 days",
+        "reason": "Based on its starting interval and the fact that it is kept indoors, lower light usually slows water use, plants often use less water in cooler months. Feel the soil before watering."
+      }
+    },
+    {
+      "name": "a due date in the past reports overdue",
+      "input": {
+        "baselineWateringDays": 10,
+        "environment": "indoor",
+        "light": "medium",
+        "anchorDate": "2026-03-08",
+        "asOfDate": "2026-03-20"
+      },
+      "expected": {
+        "intervalDays": 10,
+        "dueDate": "2026-03-18",
+        "status": "overdue",
+        "title": "Check soil now",
+        "reason": "Based on its starting interval and the fact that it is kept indoors. Feel the soil before watering."
+      }
+    },
+    {
+      "name": "a due date landing on today reports due today",
+      "input": {
+        "baselineWateringDays": 10,
+        "environment": "indoor",
+        "light": "medium",
+        "anchorDate": "2026-03-10",
+        "asOfDate": "2026-03-20"
+      },
+      "expected": {
+        "intervalDays": 10,
+        "dueDate": "2026-03-20",
+        "status": "dueToday",
+        "title": "Check soil today",
+        "reason": "Based on its starting interval and the fact that it is kept indoors. Feel the soil before watering."
+      }
+    },
+    {
+      "name": "one day out uses the singular day phrase",
+      "input": {
+        "baselineWateringDays": 10,
+        "environment": "indoor",
+        "light": "medium",
+        "anchorDate": "2026-03-11",
+        "asOfDate": "2026-03-20"
+      },
+      "expected": {
+        "intervalDays": 10,
+        "dueDate": "2026-03-21",
+        "status": "upcoming",
+        "title": "Check soil in 1 day",
+        "reason": "Based on its starting interval and the fact that it is kept indoors. Feel the soil before watering."
+      }
+    },
+    {
+      "name": "garden bed in summer keeps a longer interval than a pot",
+      "input": {
+        "baselineWateringDays": 18,
+        "environment": "outdoorGround",
+        "light": "low",
+        "anchorDate": "2026-07-01",
+        "asOfDate": "2026-07-01"
+      },
+      "expected": {
+        "intervalDays": 19,
+        "dueDate": "2026-07-20",
+        "status": "upcoming",
+        "title": "Check soil in 19 days",
+        "reason": "Based on its starting interval and the fact that it is garden soil holds moisture longer than many pots, lower light usually slows water use, it is the warmer part of the year. Feel the soil before watering."
+      }
+    },
+    {
+      "name": "garden bed in winter combines bed and cool season modifiers",
+      "input": {
+        "baselineWateringDays": 3,
+        "environment": "outdoorGround",
+        "light": "direct",
+        "anchorDate": "2026-01-05",
+        "asOfDate": "2026-01-05"
+      },
+      "expected": {
+        "intervalDays": 4,
+        "dueDate": "2026-01-09",
+        "status": "upcoming",
+        "title": "Check soil in 4 days",
+        "reason": "Based on its starting interval and the fact that it is garden soil holds moisture longer than many pots, direct sun can dry soil faster, plants often use less water in cooler months. Feel the soil before watering."
+      }
+    },
+    {
+      "name": "indoor plants never receive the warm outdoor modifier",
+      "input": {
+        "baselineWateringDays": 7,
+        "environment": "indoor",
+        "light": "direct",
+        "anchorDate": "2026-07-15",
+        "asOfDate": "2026-07-15"
+      },
+      "expected": {
+        "intervalDays": 5,
+        "dueDate": "2026-07-20",
+        "status": "upcoming",
+        "title": "Check soil in 5 days",
+        "reason": "Based on its starting interval and the fact that it is kept indoors, direct sun can dry soil faster. Feel the soil before watering."
+      }
+    },
+    {
+      "name": "bright indirect light shortens the interval by one day",
+      "input": {
+        "baselineWateringDays": 9,
+        "environment": "indoor",
+        "light": "brightIndirect",
+        "anchorDate": "2026-03-01",
+        "asOfDate": "2026-03-01"
+      },
+      "expected": {
+        "intervalDays": 8,
+        "dueDate": "2026-03-09",
+        "status": "upcoming",
+        "title": "Check soil in 8 days",
+        "reason": "Based on its starting interval and the fact that it is kept indoors, bright light can increase water use. Feel the soil before watering."
+      }
+    },
+    {
+      "name": "modifiers never push the interval below the minimum",
+      "input": {
+        "baselineWateringDays": 1,
+        "environment": "outdoorContainer",
+        "light": "direct",
+        "anchorDate": "2026-07-01",
+        "asOfDate": "2026-07-01"
+      },
+      "expected": {
+        "intervalDays": 1,
+        "dueDate": "2026-07-02",
+        "status": "upcoming",
+        "title": "Check soil in 1 day",
+        "reason": "Based on its starting interval and the fact that it is an outdoor pot can dry faster, direct sun can dry soil faster, it is the warmer part of the year. Feel the soil before watering."
+      }
+    },
+    {
+      "name": "modifiers never push the interval above the maximum",
+      "input": {
+        "baselineWateringDays": 45,
+        "environment": "outdoorGround",
+        "light": "low",
+        "anchorDate": "2026-12-01",
+        "asOfDate": "2026-12-01"
+      },
+      "expected": {
+        "intervalDays": 45,
+        "dueDate": "2027-01-15",
+        "status": "upcoming",
+        "title": "Check soil in 45 days",
+        "reason": "Based on its starting interval and the fact that it is garden soil holds moisture longer than many pots, lower light usually slows water use, plants often use less water in cooler months. Feel the soil before watering."
+      }
+    },
+    {
+      "name": "only the warm season applies when both season windows could match",
+      "input": {
+        "baselineWateringDays": 6,
+        "environment": "outdoorContainer",
+        "light": "medium",
+        "anchorDate": "2026-06-20",
+        "asOfDate": "2026-06-20"
+      },
+      "expected": {
+        "intervalDays": 2,
+        "dueDate": "2026-06-22",
+        "status": "upcoming",
+        "title": "Check soil in 2 days",
+        "reason": "Based on its starting interval and the fact that it is an outdoor pot can dry faster, it is the warmer part of the year. Feel the soil before watering."
+      }
+    }
+  ]
+}

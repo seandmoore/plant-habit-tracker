@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://plant-companion.example/contract/species.schema.json",
+  "title": "PlantSpecies array",
+  "description": "Response body of GET /v1/plants. A single object of the same shape is returned by GET /v1/plants/{id}.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "commonName", "scientificName", "summary", "baselineWateringDays", "light", "soil", "humidity", "environments"],
+    "properties": {
+      "id": { "type": "string", "minLength": 1 },
+      "commonName": { "type": "string", "minLength": 1 },
+      "scientificName": { "type": "string", "minLength": 1 },
+      "summary": { "type": "string" },
+      "baselineWateringDays": { "type": "integer", "minimum": 1, "maximum": 45 },
+      "light": { "type": "string" },
+      "soil": { "type": "string" },
+      "humidity": { "type": "string" },
+      "environments": {
+        "type": "array",
+        "minItems": 1,
+        "items": { "enum": ["indoor", "outdoorContainer", "outdoorGround"] }
+      },
+      "toxicityNote": { "type": ["string", "null"] },
+      "symbolName": { "type": "string", "description": "SF Symbol used by the native app." },
+      "icon": { "type": "string", "description": "MaterialCommunityIcons glyph used by the Expo app." }
+    }
+  }
+}

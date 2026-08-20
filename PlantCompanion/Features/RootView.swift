@@ -1,96 +1,87 @@
 import SwiftUI
 
 struct RootView: View {
-    @Environment(AppModel.self) private var appModel
+    @Environment(AppRouter.self) private var router
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
 
     var body: some View {
-        @Bindable var appModel = appModel
+        @Bindable var router = router
 
         Group {
             if hasCompletedOnboarding {
-                mainNavigation
+                navigation
             } else {
                 OnboardingView {
                     hasCompletedOnboarding = true
-                    appModel.selectedDestination = .plants
+                    router.select(.plants)
                 }
             }
         }
         .overlay(alignment: .bottomTrailing) {
             if hasCompletedOnboarding {
-                CompanionRing(state: appModel.companionState) {
-                    appModel.presentCompanion()
-                }
-                .padding(20)
+                CompanionRing(action: { router.presentCompanion() })
+                    .padding(20)
             }
         }
-        .sheet(isPresented: $appModel.isCompanionPresented) {
-            CompanionSheet()
+        .sheet(isPresented: $router.isCompanionPresented) {
+            CompanionSheet(plantID: router.companionPlantID)
                 .presentationDetents([.medium, .large])
         }
     }
 
+    /// iPhone gets tabs; iPad and Mac get a sidebar. Both drive the same destinations.
     @ViewBuilder
-    private var mainNavigation: some View {
+    private var navigation: some View {
         #if os(iOS)
         if horizontalSizeClass == .compact {
-            compactNavigation
+            tabNavigation
         } else {
-            wideNavigation
+            splitNavigation
         }
         #else
-        wideNavigation
+        splitNavigation
         #endif
     }
 
-    private var compactNavigation: some View {
-        @Bindable var appModel = appModel
+    private var tabNavigation: some View {
+        @Bindable var router = router
 
-        return TabView(selection: $appModel.selectedDestination) {
-            Tab(AppModel.Destination.today.title, systemImage: AppModel.Destination.today.symbol, value: .today) {
+        return TabView(selection: $router.destination) {
+            Tab(AppRouter.Destination.today.title, systemImage: AppRouter.Destination.today.symbolName, value: .today) {
                 TodayView()
             }
-            Tab(AppModel.Destination.plants.title, systemImage: AppModel.Destination.plants.symbol, value: .plants) {
+            Tab(AppRouter.Destination.plants.title, systemImage: AppRouter.Destination.plants.symbolName, value: .plants) {
                 PlantsView()
             }
-            Tab(AppModel.Destination.scan.title, systemImage: AppModel.Destination.scan.symbol, value: .scan) {
+            Tab(AppRouter.Destination.scan.title, systemImage: AppRouter.Destination.scan.symbolName, value: .scan) {
                 ScannerView()
             }
-            Tab(AppModel.Destination.discover.title, systemImage: AppModel.Destination.discover.symbol, value: .discover) {
+            Tab(AppRouter.Destination.discover.title, systemImage: AppRouter.Destination.discover.symbolName, value: .discover) {
                 DiscoverView()
             }
         }
     }
 
-    private var wideNavigation: some View {
-        @Bindable var appModel = appModel
+    private var splitNavigation: some View {
+        @Bindable var router = router
 
         return NavigationSplitView {
-            List(AppModel.Destination.allCases, selection: sidebarSelection) { destination in
-                Label(destination.title, systemImage: destination.symbol)
+            List(AppRouter.Destination.allCases, selection: $router.sidebarSelection) { destination in
+                Label(destination.title, systemImage: destination.symbolName)
                     .tag(destination)
             }
             .navigationTitle("Plant Companion")
         } detail: {
-            switch appModel.selectedDestination {
+            switch router.destination {
             case .today: TodayView()
             case .plants: PlantsView()
             case .scan: ScannerView()
             case .discover: DiscoverView()
             }
         }
-    }
-
-    private var sidebarSelection: Binding<AppModel.Destination?> {
-        Binding(
-            get: { appModel.selectedDestination },
-            set: { newValue in
-                if let newValue { appModel.selectedDestination = newValue }
-            }
-        )
     }
 }
