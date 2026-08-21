@@ -12,5 +12,5 @@
 
 ## Commit attribution
 
-- When Codex materially authors a change, use the verified GitHub identity `Codex <chatgpt-codex-connector[bot]@users.noreply.github.com>`.
+- When an AI assistant materially authors a change, keep the maintainer as the commit author and add a `Co-Authored-By` trailer naming the assistant.
 - Do not rewrite existing history solely to change attribution.

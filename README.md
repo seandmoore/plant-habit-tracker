@@ -2,6 +2,11 @@
 
 [![CI](https://github.com/seandmoore/plant-habit-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/seandmoore/plant-habit-tracker/actions/workflows/ci.yml)
 
+> **Built with AI assistance.** Plant Companion is developed with Claude (Anthropic) under maintainer
+> review. It is a hobby project — not horticultural, veterinary, or safety advice. Please read
+> [AI assistance and safe use](#ai-assistance-and-safe-use) before relying on anything it tells you,
+> especially around plant toxicity.
+
 Plant Companion is a hobby-friendly SwiftUI app for keeping a plant collection, logging care habits,
 getting explainable soil-check reminders, identifying plants from photos, and talking with a grounded
 on-device companion.
@@ -110,6 +115,38 @@ These are enforced in code and in tests, not only in review: the reminder phrasi
 `Contract/care-rules.json`, the nullable `scientificName` in the scan schema keeps health results from
 posing as species, and each suite asserts the wording.
 
+## AI assistance and safe use
+
+**How this project is built.** Plant Companion is written collaboratively with Claude (Anthropic).
+The current architecture — the shared `Contract/`, all three codebases, and most of the test suite —
+was authored with AI assistance. Every change is reviewed by the maintainer and gated by CI before it
+lands. That is a real filter, but reviewed code is not proven code, and a confident-looking
+explanation from an AI-written rule table is still only as good as the rule table.
+
+**The app also ships AI features.** The on-device companion uses Apple's Foundation Models where
+available, falling back to a deterministic scripted responder. It is deliberately constrained to the
+care facts your device has already saved — it is not a botanical database, and it is not consulted to
+calculate care schedules.
+
+### What to verify before acting
+
+- **Watering intervals are heuristics, not horticulture.** They come from a small rule table —
+  species baseline, indoor/outdoor, light level, season — not from species-specific research. This is
+  why the app always says "check the soil" and never "water now." Treat the date as a prompt to go
+  look at the plant, and trust what you see over what the app predicted.
+- **Scan results are guesses.** Species matches can be confidently wrong, and health output describes
+  something worth checking, never a diagnosis. Compare candidates against a reliable reference before
+  you act on one.
+- **Toxicity notes are starter hints only.** They are short, incomplete, and not a safety database.
+  **For anything involving pets, children, or ingestion, confirm with a veterinarian or a
+  poison-control service.** Do not use this app to decide whether a plant is safe.
+- **The companion inherits your records.** It answers from what you saved. If a plant is logged
+  incorrectly, its answers will be wrong in the same direction, and it will sound just as certain.
+
+If you rely on this app for a plant that matters to you, keep your own notes as the source of truth.
+It is distributed under the GNU General Public License v3.0 and comes with no warranty of any kind —
+see [`LICENSE`](LICENSE).
+
 ## Testing
 
 ```bash
@@ -134,7 +171,10 @@ node Proxy/scripts/sync-catalog.mjs
 node ReactMockup/scripts/sync-catalog.mjs
 ```
 
-CI runs those generators and fails if the committed output has drifted.
+CI runs those generators and fails if the committed output has drifted. Three workflows run on a pull
+request: `ci.yml` (the suites above, plus the contract drift check), and `claude-code-review.yml` and
+`claude.yml`, which provide automated review and let a maintainer address feedback by mentioning
+`@claude` in a comment.
 
 ## Next milestones
 
