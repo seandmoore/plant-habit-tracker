@@ -1,7 +1,7 @@
 # Contributors
 
 - **Sean Moore** — creator and maintainer
-- **Claude (Anthropic)** — AI development assistance
+- **Codex (OpenAI)** — AI development assistance
 
 This project is developed collaboratively with AI-assisted coding. All changes remain subject to
 maintainer review. See [AI assistance and safe use](README.md#ai-assistance-and-safe-use) in the
