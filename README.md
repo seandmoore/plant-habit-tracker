@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/seandmoore/plant-habit-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/seandmoore/plant-habit-tracker/actions/workflows/ci.yml)
 
-> **Built with AI assistance.** Plant Companion is developed with Claude (Anthropic) under maintainer
+> **Built with AI assistance.** Plant Companion is developed with Codex (OpenAI) under maintainer
 > review. It is a hobby project — not horticultural, veterinary, or safety advice. Please read
 > [AI assistance and safe use](#ai-assistance-and-safe-use) before relying on anything it tells you,
 > especially around plant toxicity.
@@ -117,7 +117,7 @@ posing as species, and each suite asserts the wording.
 
 ## AI assistance and safe use
 
-**How this project is built.** Plant Companion is written collaboratively with Claude (Anthropic).
+**How this project is built.** Plant Companion is written collaboratively with Codex (OpenAI).
 The current architecture — the shared `Contract/`, all three codebases, and most of the test suite —
 was authored with AI assistance. Every change is reviewed by the maintainer and gated by CI before it
 lands. That is a real filter, but reviewed code is not proven code, and a confident-looking
@@ -171,10 +171,8 @@ node Proxy/scripts/sync-catalog.mjs
 node ReactMockup/scripts/sync-catalog.mjs
 ```
 
-CI runs those generators and fails if the committed output has drifted. Three workflows run on a pull
-request: `ci.yml` (the suites above, plus the contract drift check), and `claude-code-review.yml` and
-`claude.yml`, which provide automated review and let a maintainer address feedback by mentioning
-`@claude` in a comment.
+CI runs those generators and fails if the committed output has drifted. One workflow runs on a pull
+request: `ci.yml`, which covers the suites above plus the contract drift check.
 
 ## Next milestones
 
