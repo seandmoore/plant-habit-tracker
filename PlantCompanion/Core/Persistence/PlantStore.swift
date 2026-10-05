@@ -135,10 +135,14 @@ final class PlantStore {
     /// Applies a form draft, persists it, and only then re-times its reminder.
     @discardableResult
     func commitEdits(to plant: UserPlant, edits: PlantEdits? = nil) -> Bool {
+        let previousEdits = PlantEdits(plant: plant)
         edits?.apply(to: plant)
         plant.nickname = plant.nickname.trimmingCharacters(in: .whitespacesAndNewlines)
         if plant.nickname.isEmpty { plant.nickname = plant.commonName }
-        guard save() else { return false }
+        guard save() else {
+            previousEdits.apply(to: plant)
+            return false
+        }
         refreshReminder(for: plant)
         return true
     }
@@ -147,8 +151,10 @@ final class PlantStore {
     func delete(_ plant: UserPlant) -> Bool {
         let id = plant.id
         let previousEvents = plant.careEvents
+        let previousEdits = PlantEdits(plant: plant)
         context.delete(plant)
         guard save() else {
+            previousEdits.apply(to: plant)
             plant.careEvents = previousEvents
             return false
         }

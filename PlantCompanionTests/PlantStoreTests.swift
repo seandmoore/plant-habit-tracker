@@ -403,8 +403,12 @@ final class PlantStoreRegressionTests: XCTestCase {
         let cancelled = await fixture.notifications.cancelled
         XCTAssertEqual(scheduled.count, 2)
         XCTAssertEqual(plant.careEvents.map(\.note), ["Saved history"], "Failed deletion must restore care history")
-        let reloaded = try ModelContext(fixture.container).fetch(FetchDescriptor<UserPlant>())
+        let reloadContext = ModelContext(fixture.container)
+        let reloaded = try reloadContext.fetch(FetchDescriptor<UserPlant>())
         XCTAssertEqual(reloaded.first?.careEvents.count, 1, "Persisted history must survive failed writes")
+        XCTAssertEqual(reloaded.first?.nickname, "Moss")
+        XCTAssertEqual(reloaded.first?.reminderEnabled, true)
+        withExtendedLifetime(reloadContext) {}
         XCTAssertTrue(cancelled.isEmpty, "Failed writes must not cancel the saved reminder")
 
         fail = false
