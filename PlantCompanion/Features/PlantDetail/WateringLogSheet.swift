@@ -45,17 +45,18 @@ struct WateringLogSheet: View {
                 }
             }
         }
+        .plantSaveError()
         .frame(minWidth: 320, idealWidth: 440, minHeight: 360)
     }
 
     private func save() {
-        store.logWatering(
+        guard store.logWatering(
             for: plant,
             amount: WaterAmount.parse(amount),
             unit: unit,
             timestamp: timestamp,
             note: note
-        )
+        ) else { return }
         dismiss()
     }
 }

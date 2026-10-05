@@ -24,6 +24,7 @@ struct PlantDetailView: View {
             .plantReadableColumn()
         }
         .plantPage()
+        .plantSaveError()
         .navigationTitle(plant.nickname)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {

@@ -3,32 +3,39 @@ import SwiftUI
 struct EditPlantSheet: View {
     @Environment(PlantStore.self) private var store
     @Environment(\.dismiss) private var dismiss
-    @Bindable var plant: UserPlant
+    let plant: UserPlant
+    @State private var edits: PlantEdits
     let onDeleted: () -> Void
 
     @State private var isConfirmingDeletion = false
+
+    init(plant: UserPlant, onDeleted: @escaping () -> Void) {
+        self.plant = plant
+        self.onDeleted = onDeleted
+        _edits = State(initialValue: PlantEdits(plant: plant))
+    }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Plant") {
-                    TextField("Nickname", text: $plant.nickname)
-                    TextField("Location", text: $plant.locationName)
+                    TextField("Nickname", text: $edits.nickname)
+                    TextField("Location", text: $edits.locationName)
                 }
 
                 Section("Growing place") {
-                    Picker("Environment", selection: $plant.environment) {
+                    Picker("Environment", selection: $edits.environment) {
                         ForEach(PlantEnvironment.allCases) { Text($0.title).tag($0) }
                     }
-                    Picker("Light", selection: $plant.light) {
+                    Picker("Light", selection: $edits.light) {
                         ForEach(LightLevel.allCases) { Text($0.title).tag($0) }
                     }
                 }
 
                 Section("Care reminders") {
-                    Toggle("Remind me to check soil", isOn: $plant.reminderEnabled)
-                    if plant.reminderEnabled {
-                        Picker("Reminder time", selection: $plant.reminderHour) {
+                    Toggle("Remind me to check soil", isOn: $edits.reminderEnabled)
+                    if edits.reminderEnabled {
+                        Picker("Reminder time", selection: $edits.reminderHour) {
                             ForEach(ReminderHour.selectable, id: \.self) { hour in
                                 Text(ReminderHour.title(for: hour)).tag(hour)
                             }
@@ -40,7 +47,7 @@ struct EditPlantSheet: View {
                 }
 
                 Section("Notes") {
-                    TextField("Notes", text: $plant.notes, axis: .vertical)
+                    TextField("Notes", text: $edits.notes, axis: .vertical)
                         .lineLimit(3...7)
                 }
 
@@ -52,10 +59,12 @@ struct EditPlantSheet: View {
             }
             .navigationTitle("Plant Details")
             .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
-                        store.commitEdits(to: plant)
-                        dismiss()
+                        if store.commitEdits(to: plant, edits: edits) { dismiss() }
                     }
                 }
             }
@@ -70,11 +79,12 @@ struct EditPlantSheet: View {
                 Text("This permanently removes the plant and its care history from this device.")
             }
         }
+        .plantSaveError()
         .frame(minWidth: 320, idealWidth: 460, minHeight: 500)
     }
 
     private func deletePlant() {
-        store.delete(plant)
+        guard store.delete(plant) else { return }
         dismiss()
         onDeleted()
     }

@@ -34,7 +34,7 @@ private struct Fixture {
     let notifications: RecordingNotificationScheduler
     let store: PlantStore
 
-    init() throws {
+    init(persist: @escaping (ModelContext) throws -> Void = { try $0.save() }) throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
 
@@ -46,7 +46,8 @@ private struct Fixture {
         store = PlantStore(
             context: container.mainContext,
             planner: WateringPlanner(calendar: calendar),
-            notifications: notifications
+            notifications: notifications,
+            persist: persist
         )
     }
 
@@ -70,7 +71,7 @@ private struct Fixture {
             reminderEnabled: reminderEnabled,
             reminderHour: reminderHour,
             notes: notes
-        )
+        )!
     }
 
     static func species(baselineWateringDays: Int = 10) -> PlantSpecies {
@@ -313,7 +314,7 @@ final class PlantStoreTests: XCTestCase {
             environment: .indoor,
             light: .medium,
             reminderEnabled: true
-        )
+        )!
         try await Task.sleep(for: .milliseconds(150))
 
         let scheduled = await notifications.scheduled
@@ -321,5 +322,205 @@ final class PlantStoreTests: XCTestCase {
         XCTAssertEqual(try container.mainContext.fetch(FetchDescriptor<UserPlant>()).count, 1)
         XCTAssertNil(store.lastError)
         XCTAssertEqual(plant.nickname, "Moss")
+    }
+}
+
+
+/// A deterministic authorization gate, with final pending state rather than call counts.
+private actor SuspendedNotificationScheduler: NotificationScheduling {
+    private var authorization: CheckedContinuation<Bool, Never>?
+    private var started: CheckedContinuation<Void, Never>?
+    private(set) var pending: [UUID: WateringReminderRequest] = [:]
+
+    func requestAuthorization() async throws -> Bool {
+        await withCheckedContinuation { continuation in
+            authorization = continuation
+            started?.resume()
+            started = nil
+        }
+    }
+
+    func waitUntilAuthorizationStarts() async {
+        if authorization != nil { return }
+        await withCheckedContinuation { started = $0 }
+    }
+
+    func authorize() {
+        authorization?.resume(returning: true)
+        authorization = nil
+    }
+
+    func scheduleWateringReminder(_ request: WateringReminderRequest) async throws {
+        pending[request.plantID] = request
+    }
+
+    func cancelWateringReminder(for plantID: UUID) async { pending[plantID] = nil }
+}
+
+@MainActor
+final class PlantStoreRegressionTests: XCTestCase {
+    private enum SaveFailure: Error { case injected }
+
+    func testFailedAddReturnsNilRollsBackAndDoesNotSchedule() async throws {
+        let fixture = try Fixture(persist: { _ in throw SaveFailure.injected })
+        let plant = fixture.store.addPlant(
+            nickname: "Fern", species: Fixture.species(), environment: .indoor,
+            light: .medium, reminderEnabled: true
+        )
+        XCTAssertNil(plant)
+        XCTAssertNotNil(fixture.store.lastError)
+        XCTAssertTrue(try fixture.container.mainContext.fetch(FetchDescriptor<UserPlant>()).isEmpty)
+        let scheduled = await fixture.notifications.scheduled
+        XCTAssertTrue(scheduled.isEmpty)
+    }
+
+    func testFailedWateringEditAndDeleteRollBackWithoutReminderSideEffects() async throws {
+        var fail = false
+        let fixture = try Fixture(persist: { context in
+            if fail { throw SaveFailure.injected }
+            try context.save()
+        })
+        let plant = fixture.addPlant(reminderEnabled: true)
+        await fixture.store.waitForReminderOperations(for: plant.id)
+        fail = true
+        XCTAssertFalse(fixture.store.logWatering(for: plant))
+        XCTAssertTrue(plant.careEvents.isEmpty)
+        XCTAssertTrue(try fixture.container.mainContext.fetch(FetchDescriptor<CareEvent>()).isEmpty)
+        XCTAssertNotNil(fixture.store.lastError)
+
+        var edits = PlantEdits(plant: plant)
+        edits.nickname = "Changed"
+        edits.reminderEnabled = false
+        XCTAssertFalse(fixture.store.commitEdits(to: plant, edits: edits))
+        XCTAssertEqual(plant.nickname, "Moss")
+        XCTAssertTrue(plant.reminderEnabled)
+        XCTAssertFalse(fixture.store.delete(plant))
+        XCTAssertEqual(try fixture.container.mainContext.fetch(FetchDescriptor<UserPlant>()).count, 1)
+        await fixture.store.waitForReminderOperations(for: plant.id)
+        let scheduled = await fixture.notifications.scheduled
+        let cancelled = await fixture.notifications.cancelled
+        XCTAssertEqual(scheduled.count, 1)
+        XCTAssertTrue(cancelled.isEmpty)
+
+        fail = false
+        XCTAssertTrue(fixture.store.logWatering(for: plant))
+        XCTAssertEqual(plant.careEvents.count, 1)
+        XCTAssertNil(fixture.store.lastError)
+        await fixture.store.waitForReminderOperations(for: plant.id)
+    }
+
+    func testDiscardingEditDraftLeavesModelAndReminderUnchanged() async throws {
+        let fixture = try Fixture()
+        let plant = fixture.addPlant(reminderEnabled: true, reminderHour: 9)
+        await fixture.store.waitForReminderOperations(for: plant.id)
+        var draft = PlantEdits(plant: plant)
+        draft.nickname = "Discarded"
+        draft.reminderEnabled = false
+        draft.reminderHour = 20
+        // Cancel and interactive dismissal both discard this value without committing it.
+        XCTAssertEqual(plant.nickname, "Moss")
+        XCTAssertTrue(plant.reminderEnabled)
+        XCTAssertEqual(plant.reminderHour, 9)
+        XCTAssertFalse(fixture.container.mainContext.hasChanges)
+        let scheduled = await fixture.notifications.scheduled
+        XCTAssertEqual(scheduled.count, 1)
+        XCTAssertEqual(scheduled.first?.hour, 9)
+        XCTAssertEqual(draft.reminderHour, 20)
+    }
+
+    func testCommittingDraftUpdatesModelAndReminder() async throws {
+        let fixture = try Fixture()
+        let plant = fixture.addPlant(reminderEnabled: true)
+        await fixture.store.waitForReminderOperations(for: plant.id)
+        var draft = PlantEdits(plant: plant)
+        draft.reminderHour = 20
+        XCTAssertTrue(fixture.store.commitEdits(to: plant, edits: draft))
+        await fixture.store.waitForReminderOperations(for: plant.id)
+        let scheduled = await fixture.notifications.scheduled
+        XCTAssertEqual(scheduled.last?.hour, 20)
+        draft.reminderEnabled = false
+        XCTAssertTrue(fixture.store.commitEdits(to: plant, edits: draft))
+        await fixture.store.waitForReminderOperations(for: plant.id)
+        let cancelled = await fixture.notifications.cancelled
+        XCTAssertEqual(cancelled, [plant.id])
+    }
+
+    func testDeletingDuringAuthorizationCannotResurrectReminder() async throws {
+        try await assertNoStaleReminder(delete: true)
+    }
+
+    func testDisablingDuringAuthorizationCannotResurrectReminder() async throws {
+        try await assertNoStaleReminder(delete: false)
+    }
+
+    private func assertNoStaleReminder(delete: Bool) async throws {
+        let container = try ModelContainer(
+            for: UserPlant.self, CareEvent.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let notifications = SuspendedNotificationScheduler()
+        let store = PlantStore(context: container.mainContext, notifications: notifications)
+        let plant = try XCTUnwrap(store.addPlant(
+            nickname: "Fern", species: Fixture.species(), environment: .indoor,
+            light: .medium, reminderEnabled: true
+        ))
+        let id = plant.id
+        await notifications.waitUntilAuthorizationStarts()
+        if delete {
+            XCTAssertTrue(store.delete(plant))
+        } else {
+            var draft = PlantEdits(plant: plant)
+            draft.reminderEnabled = false
+            XCTAssertTrue(store.commitEdits(to: plant, edits: draft))
+        }
+        await notifications.authorize()
+        await store.waitForReminderOperations(for: id)
+        let pending = await notifications.pending
+        XCTAssertTrue(pending.isEmpty)
+    }
+}
+
+
+private actor SuspendedAddScheduler: NotificationScheduling {
+    private var add: CheckedContinuation<Void, Never>?
+    private var started: CheckedContinuation<Void, Never>?
+    private(set) var pending: Set<UUID> = []
+
+    func requestAuthorization() async throws -> Bool { true }
+    func scheduleWateringReminder(_ request: WateringReminderRequest) async throws {
+        await withCheckedContinuation { continuation in
+            add = continuation
+            started?.resume()
+            started = nil
+        }
+        pending.insert(request.plantID)
+    }
+    func waitUntilAddStarts() async {
+        if add != nil { return }
+        await withCheckedContinuation { started = $0 }
+    }
+    func finishAdd() { add?.resume(); add = nil }
+    func cancelWateringReminder(for plantID: UUID) async { pending.remove(plantID) }
+}
+
+extension PlantStoreRegressionTests {
+    func testDeletingDuringNotificationAddCancelsAfterAddFinishes() async throws {
+        let container = try ModelContainer(
+            for: UserPlant.self, CareEvent.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let notifications = SuspendedAddScheduler()
+        let store = PlantStore(context: container.mainContext, notifications: notifications)
+        let plant = try XCTUnwrap(store.addPlant(
+            nickname: "Fern", species: Fixture.species(), environment: .indoor,
+            light: .medium, reminderEnabled: true
+        ))
+        let id = plant.id
+        await notifications.waitUntilAddStarts()
+        XCTAssertTrue(store.delete(plant))
+        await notifications.finishAdd()
+        await store.waitForReminderOperations(for: id)
+        let pending = await notifications.pending
+        XCTAssertTrue(pending.isEmpty)
     }
 }
