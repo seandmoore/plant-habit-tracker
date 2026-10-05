@@ -93,4 +93,9 @@ jobs:
           -project PlantCompanion.xcodeproj
           -scheme PlantCompanion
           -destination 'platform=macOS'
+          -resultBundlePath NativeTests.xcresult
           CODE_SIGNING_ALLOWED=NO
+
+      - name: Report native test failures
+        if: failure()
+        run: xcrun xcresulttool get test-results summary --path NativeTests.xcresult
