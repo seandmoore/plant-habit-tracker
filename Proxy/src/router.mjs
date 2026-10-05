@@ -14,10 +14,9 @@ export function createRouter(routes) {
 
     for (const route of compiled) {
       if (route.method !== request.method) continue;
-      const params = matchSegments(route.segments, segments);
-      if (!params) continue;
-
       try {
+        const params = matchSegments(route.segments, segments);
+        if (!params) continue;
         return await route.handler({ request, env, context, url, params });
       } catch (error) {
         if (error instanceof HttpError) return error.toResponse();
@@ -37,7 +36,12 @@ function matchSegments(routeSegments, pathSegments) {
     const actual = pathSegments[index];
     if (expected.startsWith("{") && expected.endsWith("}")) {
       if (!actual) return null;
-      params[expected.slice(1, -1)] = decodeURIComponent(actual);
+      try {
+        params[expected.slice(1, -1)] = decodeURIComponent(actual);
+      } catch (error) {
+        if (error instanceof URIError) throw new HttpError("invalid_path_encoding", 400);
+        throw error;
+      }
       continue;
     }
     if (expected !== actual) return null;

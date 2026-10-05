@@ -84,4 +84,14 @@ describe("routing", () => {
     assert.equal(response.status, 404);
     assert.deepEqual(await response.json(), { error: "species_not_found" });
   });
+
+  for (const id of ["%", "%E0%A4%A", "%FF"]) {
+    test(`rejects malformed species ID encoding: ${id}`, async () => {
+      const response = await worker.fetch(getRequest(`/v1/plants/${id}`), allowAll());
+
+      assert.equal(response.status, 400);
+      assert.equal(response.headers.get("content-type"), "application/json; charset=utf-8");
+      assert.deepEqual(await response.json(), { error: "invalid_path_encoding" });
+    });
+  }
 });
