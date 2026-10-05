@@ -152,7 +152,7 @@ final class PlantStoreTests: XCTestCase {
         fixture.store.delete(plant)
 
         XCTAssertTrue(try fixture.container.mainContext.fetch(FetchDescriptor<UserPlant>()).isEmpty)
-        XCTAssertTrue(try fixture.container.mainContext.fetch(FetchDescriptor<CareEvent>()).isEmpty)
+        XCTAssertTrue(try fixture.container.mainContext.fetch(FetchDescriptor<CareEvent>()).isEmpty, "Failed watering must remove the inserted event")
     }
 
     func testCommittingEditsFallsBackToTheCommonNameWhenTheNicknameIsCleared() throws {
@@ -384,8 +384,8 @@ final class PlantStoreRegressionTests: XCTestCase {
         await fixture.store.waitForReminderOperations(for: plant.id)
         fail = true
         XCTAssertFalse(fixture.store.logWatering(for: plant))
-        XCTAssertTrue(plant.careEvents.isEmpty)
-        XCTAssertTrue(try fixture.container.mainContext.fetch(FetchDescriptor<CareEvent>()).isEmpty)
+        XCTAssertTrue(plant.careEvents.isEmpty, "Failed watering must restore the plant relationship")
+        XCTAssertTrue(try fixture.container.mainContext.fetch(FetchDescriptor<CareEvent>()).isEmpty, "Failed watering must remove the inserted event")
         XCTAssertNotNil(fixture.store.lastError)
 
         var edits = PlantEdits(plant: plant)
@@ -393,17 +393,17 @@ final class PlantStoreRegressionTests: XCTestCase {
         edits.reminderEnabled = false
         XCTAssertFalse(fixture.store.commitEdits(to: plant, edits: edits))
         XCTAssertEqual(plant.nickname, "Moss")
-        XCTAssertTrue(plant.reminderEnabled)
+        XCTAssertTrue(plant.reminderEnabled, "Failed or discarded edits must preserve reminder enablement")
         XCTAssertFalse(fixture.store.delete(plant))
         XCTAssertEqual(try fixture.container.mainContext.fetch(FetchDescriptor<UserPlant>()).count, 1)
         await fixture.store.waitForReminderOperations(for: plant.id)
         let scheduled = await fixture.notifications.scheduled
         let cancelled = await fixture.notifications.cancelled
         XCTAssertEqual(scheduled.count, 1)
-        XCTAssertTrue(cancelled.isEmpty)
+        XCTAssertTrue(cancelled.isEmpty, "Failed writes must not cancel the saved reminder")
 
         fail = false
-        XCTAssertTrue(fixture.store.logWatering(for: plant))
+        XCTAssertTrue(fixture.store.logWatering(for: plant), "Retry after restoring persistence must succeed")
         XCTAssertEqual(plant.careEvents.count, 1)
         XCTAssertNil(fixture.store.lastError)
         await fixture.store.waitForReminderOperations(for: plant.id)
@@ -419,7 +419,7 @@ final class PlantStoreRegressionTests: XCTestCase {
         draft.reminderHour = 20
         // Cancel and interactive dismissal both discard this value without committing it.
         XCTAssertEqual(plant.nickname, "Moss")
-        XCTAssertTrue(plant.reminderEnabled)
+        XCTAssertTrue(plant.reminderEnabled, "Failed or discarded edits must preserve reminder enablement")
         XCTAssertEqual(plant.reminderHour, 9)
         XCTAssertFalse(fixture.container.mainContext.hasChanges)
         let scheduled = await fixture.notifications.scheduled

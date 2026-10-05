@@ -200,6 +200,9 @@ final class PlantStore {
 
     private func save() -> Bool {
         guard context.hasChanges else { lastError = nil; return true }
+        // Register relationship and property edits before a synchronous save attempt;
+        // otherwise rollback can miss changes still awaiting the next run-loop turn.
+        context.processPendingChanges()
         do {
             try persist(context)
             lastError = nil
