@@ -111,6 +111,7 @@ final class PlantStore {
         timestamp: Date = .now,
         note: String = ""
     ) -> Bool {
+        let previousEvents = plant.careEvents
         let event = CareEvent(
             kind: .watered,
             timestamp: timestamp,
@@ -120,7 +121,12 @@ final class PlantStore {
         )
         context.insert(event)
         plant.careEvents.append(event)
-        guard save() else { return false }
+        guard save() else {
+            // SwiftData rollback removes the inserted event but can leave the live
+            // relationship cache holding it. Restore the pre-write collection too.
+            plant.careEvents = previousEvents
+            return false
+        }
         // The schedule is anchored to the newest watering, so the reminder moves with it.
         refreshReminder(for: plant)
         return true
@@ -140,8 +146,12 @@ final class PlantStore {
     @discardableResult
     func delete(_ plant: UserPlant) -> Bool {
         let id = plant.id
+        let previousEvents = plant.careEvents
         context.delete(plant)
-        guard save() else { return false }
+        guard save() else {
+            plant.careEvents = previousEvents
+            return false
+        }
         reminderVersions[id, default: 0] += 1
         enqueueReminder(nil, for: id)
         return true

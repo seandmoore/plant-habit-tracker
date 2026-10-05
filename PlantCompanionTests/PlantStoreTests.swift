@@ -382,10 +382,12 @@ final class PlantStoreRegressionTests: XCTestCase {
         })
         let plant = fixture.addPlant(reminderEnabled: true)
         await fixture.store.waitForReminderOperations(for: plant.id)
+        XCTAssertTrue(fixture.store.logWatering(for: plant, note: "Saved history"))
+        await fixture.store.waitForReminderOperations(for: plant.id)
         fail = true
         XCTAssertFalse(fixture.store.logWatering(for: plant))
-        XCTAssertTrue(plant.careEvents.isEmpty, "Failed watering must restore the plant relationship")
-        XCTAssertTrue(try fixture.container.mainContext.fetch(FetchDescriptor<CareEvent>()).isEmpty, "Failed watering must remove the inserted event")
+        XCTAssertEqual(plant.careEvents.map(\.note), ["Saved history"], "Failed watering must restore the plant relationship")
+        XCTAssertEqual(try fixture.container.mainContext.fetch(FetchDescriptor<CareEvent>()).count, 1, "Failed watering must remove only the inserted event")
         XCTAssertNotNil(fixture.store.lastError)
 
         var edits = PlantEdits(plant: plant)
@@ -399,12 +401,15 @@ final class PlantStoreRegressionTests: XCTestCase {
         await fixture.store.waitForReminderOperations(for: plant.id)
         let scheduled = await fixture.notifications.scheduled
         let cancelled = await fixture.notifications.cancelled
-        XCTAssertEqual(scheduled.count, 1)
+        XCTAssertEqual(scheduled.count, 2)
+        XCTAssertEqual(plant.careEvents.map(\.note), ["Saved history"], "Failed deletion must restore care history")
+        let reloaded = try ModelContext(fixture.container).fetch(FetchDescriptor<UserPlant>())
+        XCTAssertEqual(reloaded.first?.careEvents.count, 1, "Persisted history must survive failed writes")
         XCTAssertTrue(cancelled.isEmpty, "Failed writes must not cancel the saved reminder")
 
         fail = false
         XCTAssertTrue(fixture.store.logWatering(for: plant), "Retry after restoring persistence must succeed")
-        XCTAssertEqual(plant.careEvents.count, 1)
+        XCTAssertEqual(plant.careEvents.count, 2)
         XCTAssertNil(fixture.store.lastError)
         await fixture.store.waitForReminderOperations(for: plant.id)
     }
