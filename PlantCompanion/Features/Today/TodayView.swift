@@ -21,6 +21,7 @@ struct TodayView: View {
                 .plantReadableColumn()
             }
             .plantPage()
+            .plantSaveError()
             .navigationTitle("Today")
         }
     }

@@ -99,12 +99,13 @@ struct AddPlantView: View {
             }
             .task { await model.load(using: appEnvironment.catalog) }
         }
+        .plantSaveError()
         .frame(minWidth: 320, idealWidth: 460, minHeight: 560)
     }
 
     private func addPlant() {
         guard let species = model.selectedSpecies else { return }
-        store.addPlant(
+        guard store.addPlant(
             nickname: model.nickname,
             species: species,
             environment: model.environment,
@@ -114,7 +115,7 @@ struct AddPlantView: View {
             reminderHour: model.reminderHour,
             notes: model.notes,
             photoData: model.photoData
-        )
+        ) != nil else { return }
         dismiss()
     }
 }
