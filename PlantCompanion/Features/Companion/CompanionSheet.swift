@@ -110,6 +110,7 @@ struct CompanionSheet: View {
     }
 
     private func send() {
+        guard !conversation.isBusy else { return }
         let outgoing = question
         question = ""
 

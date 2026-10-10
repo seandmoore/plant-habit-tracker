@@ -48,6 +48,11 @@ The planner starts from the species' `baselineWateringDays` and applies, in orde
 3. at most one **season** modifier, resolved through `seasonPrecedence` — the warm-season window is
    checked first and never applies to indoor plants, then the cool-season window.
 
+The season is taken from the anchor date (the most recent watering, or the date the plant was added),
+so each care cycle has a stable due date even if the month changes while the app is closed. The current
+date only determines whether that check is overdue, due today, or upcoming. Logging a new watering
+starts a new cycle and uses the season at that watering date.
+
 The result is clamped to `bounds`, added to the anchor date (the most recent watering, or the date the
 plant was added), and compared against the current day to produce `overdue` / `dueToday` / `upcoming`.
 

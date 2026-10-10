@@ -36,6 +36,8 @@ Node.js is only needed for catalog generation and proxy development; building th
 - Indoor and outdoor plant profiles with light and placement information.
 - Quick watering plus optional amount, unit, date, and notes.
 - Explainable recommendation rules and opt-in local notifications.
+- Care dates stay stable through seasonal changes until the next watering or profile edit; saved
+  opt-in reminders are restored when the app launches.
 - Offline starter catalog and plant discovery.
 - Photo-library scanning on every platform and camera capture on iOS.
 - Demo scan results by default, with a production proxy adapter ready for Pl@ntNet.

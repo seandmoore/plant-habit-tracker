@@ -37,6 +37,7 @@ struct PlantCompanionApp: App {
                 .environment(router)
                 .environment(store)
                 .environment(appEnvironment)
+                .task { store.restoreReminders() }
         }
         .modelContainer(container)
     }

@@ -38,7 +38,10 @@ struct WateringPlanner: Sendable {
     }
 
     func plan(for profile: CareProfile, plantID: UUID, asOf date: Date = .now) -> CareRecommendation {
-        let applied = interval(for: profile, asOf: date)
+        // Keep the season in which this care cycle started. Using today's month would move
+        // an unchanged plant's due date after its notification was already scheduled, even
+        // while the app is closed. The next watering starts a new cycle with its own season.
+        let applied = interval(for: profile, asOf: profile.anchor)
         let dueDate = calendar.date(byAdding: .day, value: applied.days, to: profile.anchor) ?? date
         let dayDifference = calendar.dateComponents(
             [.day],

@@ -31,6 +31,7 @@ final class PlantStore {
     @ObservationIgnored private var authorizationTasks: [UUID: Task<Void, Never>] = [:]
     @ObservationIgnored private var reminderVersions: [UUID: Int] = [:]
     @ObservationIgnored private var reminderOperations: [UUID: Task<Void, Never>] = [:]
+    @ObservationIgnored private var hasRestoredReminders = false
 
     init(
         context: ModelContext,
@@ -164,6 +165,23 @@ final class PlantStore {
     }
 
     // MARK: - Reminders
+
+    /// Rebuild saved opt-in reminders once per launch, including requests from older planner
+    /// versions. This reads persisted plants without saving or changing any care records.
+    func restoreReminders() {
+        guard !hasRestoredReminders else { return }
+        var descriptor = FetchDescriptor<UserPlant>(predicate: #Predicate { $0.reminderEnabled })
+        descriptor.includePendingChanges = false
+        do {
+            let plants = try context.fetch(descriptor)
+            hasRestoredReminders = true
+            for plant in plants {
+                refreshReminder(for: plant)
+            }
+        } catch {
+            lastError = "Care reminders could not be restored. \(error.localizedDescription)"
+        }
+    }
 
     /// Reminders are always derived from the current recommendation, never scheduled ad hoc, so
     /// a plant can never hold a notification that disagrees with what the app shows.
