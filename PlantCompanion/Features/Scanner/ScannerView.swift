@@ -7,6 +7,8 @@ import UIKit
 
 struct ScannerView: View {
     @Environment(AppEnvironment.self) private var appEnvironment
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @State private var model = ScannerModel()
     @State private var catalog: [PlantSpecies] = []
@@ -17,13 +19,27 @@ struct ScannerView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 18) {
+                VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("A closer look.")
+                            .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                        Text("Start with a photo. Get to know what’s growing.")
+                            .foregroundStyle(.secondary)
+                    }
                     captureCard
-                    if model.isScanning { scanningCard }
-                    if let errorMessage = model.errorMessage { errorCard(errorMessage) }
-                    if !model.results.isEmpty { resultsSection }
+                    if model.isScanning {
+                        scanningCard.transition(PlantMotion.transition(reduceMotion: reduceMotion))
+                    }
+                    if let errorMessage = model.errorMessage {
+                        errorCard(errorMessage).transition(.opacity)
+                    }
+                    if !model.results.isEmpty {
+                        resultsSection.transition(PlantMotion.transition(reduceMotion: reduceMotion))
+                    }
                     privacyNote
                 }
+                .animation(PlantMotion.animation(reduceMotion: reduceMotion), value: model.isScanning)
+                .animation(PlantMotion.animation(reduceMotion: reduceMotion), value: model.results.count)
                 .plantReadableColumn()
             }
             .plantPage()
@@ -53,14 +69,12 @@ struct ScannerView: View {
     }
 
     private var captureCard: some View {
-        @Bindable var model = model
-
-        return PlantSection {
-            Picker("Scan type", selection: $model.mode) {
-                ForEach(ScanMode.allCases) { Text($0.title).tag($0) }
+        PlantSection {
+            if dynamicTypeSize.isAccessibilitySize {
+                scanModePicker.pickerStyle(.menu)
+            } else {
+                scanModePicker.pickerStyle(.segmented)
             }
-            .pickerStyle(.segmented)
-            .disabled(model.isScanning)
 
             Group {
                 if let imageData = model.imageData {
@@ -71,52 +85,84 @@ struct ScannerView: View {
             }
             .frame(maxWidth: .infinity)
 
-            HStack {
-                #if os(iOS)
-                Button("Camera", systemImage: "camera.fill") { isShowingCamera = true }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(model.isScanning || !UIImagePickerController.isSourceTypeAvailable(.camera))
-                #endif
-
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label("Photo Library", systemImage: "photo.on.rectangle")
-                }
-                .buttonStyle(.bordered)
-                .disabled(model.isScanning)
-
-                if model.imageData != nil {
-                    Button("Scan again", systemImage: "arrow.clockwise") {
-                        Task { await model.scan(using: appEnvironment.identification) }
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(model.isScanning)
-                }
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) { captureActions }
+                    .fixedSize(horizontal: true, vertical: false)
+                VStack(alignment: .leading, spacing: 12) { captureActions }
             }
+            .controlSize(.large)
+        }
+    }
+
+    private var scanModePicker: some View {
+        @Bindable var model = model
+
+        return Picker("Scan type", selection: $model.mode) {
+            ForEach(ScanMode.allCases) { Text($0.title).tag($0) }
+        }
+        .disabled(model.isScanning)
+    }
+
+    @ViewBuilder
+    private var captureActions: some View {
+        #if os(iOS)
+        Button("Camera", systemImage: "camera") { isShowingCamera = true }
+            .buttonStyle(.glassProminent)
+            .disabled(model.isScanning || !UIImagePickerController.isSourceTypeAvailable(.camera))
+        #endif
+
+        PhotosPicker(selection: $photoItem, matching: .images) {
+            Label("Photo Library", systemImage: "photo.on.rectangle.angled")
+        }
+        .buttonStyle(.bordered)
+        .disabled(model.isScanning)
+
+        if model.imageData != nil {
+            Button("Scan again", systemImage: "arrow.clockwise") {
+                Task { await model.scan(using: appEnvironment.identification) }
+            }
+            .buttonStyle(.bordered)
+            .disabled(model.isScanning)
         }
     }
 
     private var framingGuide: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(PlantTheme.mint.opacity(0.45))
-            VStack(spacing: 12) {
+        VStack(spacing: 16) {
+            ZStack {
                 Image(systemName: "viewfinder")
-                    .font(.system(size: 54, weight: .light))
-                Text("Fill the frame with one plant")
-                    .font(.headline)
-                Text("Clear leaf and stem details improve suggestions.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 88, weight: .ultraLight))
+                    .foregroundStyle(PlantTheme.accent.opacity(0.5))
+                Image(systemName: "leaf.fill")
+                    .font(.system(size: 36, weight: .regular))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(PlantTheme.accent)
             }
+            .accessibilityHidden(true)
+            Text("One plant. A little detail.")
+                .font(.title3.weight(.semibold))
+            Text("Fill the frame with clear leaves and stems for better suggestions.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
-        .frame(height: 240)
+        .multilineTextAlignment(.center)
+        .padding(24)
+        .frame(maxWidth: .infinity, minHeight: 260)
+        .background(PlantTheme.accent.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
         .accessibilityElement(children: .combine)
     }
 
     private var scanningCard: some View {
         PlantSection {
-            ProgressView("Comparing visible features…")
-                .frame(maxWidth: .infinity)
+            HStack(spacing: 16) {
+                CompanionRing(state: .thinking)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Looking a little closer")
+                        .font(.headline)
+                    ProgressView("Comparing visible features…")
+                        .font(.subheadline)
+                }
+                Spacer(minLength: 0)
+            }
         }
     }
 
@@ -154,7 +200,7 @@ struct ScannerView: View {
                     Text(candidate.source).font(.caption).foregroundStyle(.secondary)
 
                     if let match = model.catalogMatch(for: candidate, in: catalog) {
-                        Button("Use this identification") { speciesToAdd = match }
+                        Button("Use this identification", systemImage: "plus.circle") { speciesToAdd = match }
                             .buttonStyle(.bordered)
                     }
                 }

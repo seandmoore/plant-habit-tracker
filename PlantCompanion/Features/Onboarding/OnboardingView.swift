@@ -3,85 +3,120 @@ import SwiftUI
 struct OnboardingView: View {
     let completion: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var step = 0
 
     private struct Page: Identifiable {
-        let id = UUID()
+        let id: Int
         let symbolName: String
+        let eyebrow: String
         let title: String
         let message: String
     }
 
     private static let pages: [Page] = [
         Page(
+            id: 0,
             symbolName: "leaf.fill",
-            title: "Meet your calm care companion",
-            message: "Keep indoor and outdoor plants together, with readable guidance grounded in what you record."
+            eyebrow: "A little care, every day",
+            title: "Room to grow.",
+            message: "A calm home for your plants. Keep their stories, find your rhythm, and learn as you grow."
         ),
         Page(
+            id: 1,
             symbolName: "drop.degreesign.fill",
-            title: "Observe, then water",
-            message: "Care dates remind you to check the soil. Quick logs reveal patterns without turning plant care into a streak."
+            eyebrow: "Follow your plant’s lead",
+            title: "Observe. Then water.",
+            message: "Gentle reminders invite you to check the soil. Log the care you give and discover patterns, without chasing a streak."
         ),
         Page(
-            symbolName: "viewfinder",
-            title: "Search, scan, and ask",
-            message: "Explore a starter catalog, get photo suggestions, and ask the companion to explain saved care information."
+            id: 2,
+            symbolName: "camera.macro",
+            eyebrow: "Stay curious",
+            title: "Get to know your green.",
+            message: "Explore plants, compare photo suggestions, and ask a companion that draws on your saved care details."
         )
     ]
 
     private var isLastStep: Bool { step == Self.pages.count - 1 }
-    private var page: Page { Self.pages[min(step, Self.pages.count - 1)] }
+    private var page: Page { Self.pages[step] }
 
     var body: some View {
-        ZStack {
-            PlantPageBackground()
+        ScrollView {
+            VStack(spacing: 32) {
+                Label("Plant Companion", systemImage: "leaf")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(PlantTheme.accent)
+                    .padding(.top, 24)
 
-            VStack(spacing: 28) {
-                Spacer()
+                illustration
 
-                CompanionRing(state: isLastStep ? .speaking : .idle)
-                    .scaleEffect(1.45)
-
-                VStack(spacing: 14) {
+                VStack(spacing: 12) {
+                    Text(page.eyebrow)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(PlantTheme.accent)
                     Text(page.title)
-                        .font(.largeTitle.bold())
-                        .multilineTextAlignment(.center)
+                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
                     Text(page.message)
                         .font(.title3)
                         .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(3)
+                        .lineSpacing(4)
                 }
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
                 .id(page.id)
-                .transition(.opacity.combined(with: .move(edge: .trailing)))
+                .transition(PlantMotion.transition(reduceMotion: reduceMotion))
                 .accessibilityElement(children: .combine)
 
                 stepIndicator
 
-                Button(isLastStep ? "Add my first plant" : "Continue") { advance() }
-                    .buttonStyle(.borderedProminent)
+                VStack(spacing: 14) {
+                    Button(action: advance) {
+                        Label(isLastStep ? "Start my collection" : "Continue", systemImage: "arrow.right")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.glassProminent)
                     .controlSize(.large)
 
-                if step > 0 {
-                    Button("Back") { withAnimation(.snappy) { step -= 1 } }
-                        .buttonStyle(.plain)
+                    Button("Back", systemImage: "arrow.left") {
+                        withAnimation(PlantMotion.animation(reduceMotion: reduceMotion)) { step -= 1 }
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(step == 0)
+                    .opacity(step == 0 ? 0 : 1)
+                    .accessibilityHidden(step == 0)
                 }
-
-                Spacer()
+                .frame(maxWidth: 320)
             }
             .padding(28)
-            .frame(maxWidth: 620)
+            .frame(maxWidth: 560)
+            .frame(maxWidth: .infinity)
         }
-        .tint(PlantTheme.accent)
+        .plantPage()
+        .defaultScrollAnchor(.center, for: .alignment)
+    }
+
+    private var illustration: some View {
+        ZStack {
+            Circle()
+                .fill(PlantTheme.accent.opacity(0.04))
+                .frame(width: 224, height: 224)
+            Circle()
+                .strokeBorder(PlantTheme.accent.opacity(0.12), lineWidth: 1)
+                .frame(width: 192, height: 192)
+            PlantArtwork(imageData: nil, size: 144, symbolName: page.symbolName)
+                .id(page.id)
+                .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.92)))
+        }
+        .accessibilityHidden(true)
     }
 
     private var stepIndicator: some View {
-        HStack(spacing: 7) {
-            ForEach(Array(Self.pages.enumerated()), id: \.element.id) { index, _ in
+        HStack(spacing: 8) {
+            ForEach(Self.pages) { item in
                 Capsule()
-                    .fill(index == step ? PlantTheme.accent : .secondary.opacity(0.25))
-                    .frame(width: index == step ? 28 : 8, height: 8)
+                    .fill(item.id == step ? PlantTheme.accent : .secondary.opacity(0.25))
+                    .frame(width: item.id == step ? 26 : 7, height: 7)
             }
         }
         .accessibilityElement()
@@ -93,6 +128,6 @@ struct OnboardingView: View {
             completion()
             return
         }
-        withAnimation(.snappy) { step += 1 }
+        withAnimation(PlantMotion.animation(reduceMotion: reduceMotion)) { step += 1 }
     }
 }

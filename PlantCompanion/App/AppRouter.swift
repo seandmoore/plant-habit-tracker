@@ -26,10 +26,10 @@ final class AppRouter {
 
         var symbolName: String {
             switch self {
-            case .today: "sun.max.fill"
-            case .plants: "leaf.fill"
-            case .scan: "viewfinder"
-            case .discover: "magnifyingglass"
+            case .today: "sun.horizon"
+            case .plants: "leaf"
+            case .scan: "camera.viewfinder"
+            case .discover: "safari"
             }
         }
     }

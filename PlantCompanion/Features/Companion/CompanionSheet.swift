@@ -7,6 +7,7 @@ struct CompanionSheet: View {
     @Environment(AppEnvironment.self) private var appEnvironment
     @Environment(PlantStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query private var plants: [UserPlant]
 
     @State private var conversation = CompanionConversation()
@@ -43,6 +44,7 @@ struct CompanionSheet: View {
                     ForEach(conversation.messages) { message in
                         MessageBubble(message: message)
                             .id(message.id)
+                            .transition(PlantMotion.transition(reduceMotion: reduceMotion))
                     }
 
                     if conversation.state == .thinking {
@@ -56,10 +58,15 @@ struct CompanionSheet: View {
                     }
                 }
                 .padding()
+                .frame(maxWidth: PlantTheme.readableWidth)
+                .frame(maxWidth: .infinity)
+                .animation(PlantMotion.animation(reduceMotion: reduceMotion), value: conversation.messages.count)
             }
             .onChange(of: conversation.messages.count) { _, _ in
                 guard let last = conversation.messages.last else { return }
-                withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                withAnimation(PlantMotion.animation(reduceMotion: reduceMotion)) {
+                    proxy.scrollTo(last.id, anchor: .bottom)
+                }
             }
         }
     }
@@ -67,6 +74,8 @@ struct CompanionSheet: View {
     private var header: some View {
         VStack(spacing: 10) {
             CompanionRing(state: conversation.state)
+            Text(plant.map { "A little help for \($0.nickname)." } ?? "Let’s talk plants.")
+                .font(.system(.title2, design: .rounded, weight: .semibold))
             Text(groundingDescription)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -89,14 +98,15 @@ struct CompanionSheet: View {
                 .lineLimit(1...4)
                 .onSubmit { send() }
 
-            Button("Send", systemImage: "arrow.up.circle.fill") { send() }
+            Button("Send", systemImage: "arrow.up") { send() }
                 .labelStyle(.iconOnly)
-                .font(.title)
+                .buttonStyle(.glassProminent)
+                .buttonBorderShape(.circle)
+                .controlSize(.large)
                 .disabled(question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || conversation.isBusy)
                 .accessibilityLabel("Send question")
         }
         .padding()
-        .background(.bar)
     }
 
     private func send() {
@@ -129,10 +139,11 @@ private struct MessageBubble: View {
             if message.role == .user { Spacer(minLength: 56) }
 
             Text(message.text)
+                .textSelection(.enabled)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 11)
                 .background(background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .foregroundStyle(message.role == .user ? .white : .primary)
+                .foregroundStyle(.primary)
 
             if message.role == .companion { Spacer(minLength: 56) }
         }
@@ -141,6 +152,6 @@ private struct MessageBubble: View {
     }
 
     private var background: Color {
-        message.role == .user ? PlantTheme.accent : PlantTheme.mint.opacity(0.5)
+        message.role == .user ? PlantTheme.accent.opacity(0.14) : Color.primary.opacity(0.05)
     }
 }
