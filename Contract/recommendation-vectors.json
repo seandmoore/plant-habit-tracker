@@ -222,6 +222,91 @@
         "title": "Check soil in 2 days",
         "reason": "Based on its starting interval and the fact that it is an outdoor pot can dry faster, it is the warmer part of the year. Feel the soil before watering."
       }
+    },
+    {
+      "name": "cool-season start keeps the existing cycle date",
+      "input": {
+        "baselineWateringDays": 9,
+        "environment": "indoor",
+        "light": "medium",
+        "anchorDate": "2026-10-24",
+        "asOfDate": "2026-11-02"
+      },
+      "expected": {
+        "intervalDays": 9,
+        "dueDate": "2026-11-02",
+        "status": "dueToday",
+        "title": "Check soil today",
+        "reason": "Based on its starting interval and the fact that it is kept indoors. Feel the soil before watering."
+      }
+    },
+    {
+      "name": "cool-season end keeps the winter cycle interval",
+      "input": {
+        "baselineWateringDays": 9,
+        "environment": "indoor",
+        "light": "medium",
+        "anchorDate": "2026-02-24",
+        "asOfDate": "2026-03-07"
+      },
+      "expected": {
+        "intervalDays": 11,
+        "dueDate": "2026-03-07",
+        "status": "dueToday",
+        "title": "Check soil today",
+        "reason": "Based on its starting interval and the fact that it is kept indoors, plants often use less water in cooler months. Feel the soil before watering."
+      }
+    },
+    {
+      "name": "warm-season start keeps the existing outdoor cycle date",
+      "input": {
+        "baselineWateringDays": 9,
+        "environment": "outdoorContainer",
+        "light": "brightIndirect",
+        "anchorDate": "2026-05-28",
+        "asOfDate": "2026-06-01"
+      },
+      "expected": {
+        "intervalDays": 6,
+        "dueDate": "2026-06-03",
+        "status": "upcoming",
+        "title": "Check soil in 2 days",
+        "reason": "Based on its starting interval and the fact that it is an outdoor pot can dry faster, bright light can increase water use. Feel the soil before watering."
+      }
+    },
+    {
+      "name": "warm-season end does not postpone an overdue check",
+      "input": {
+        "baselineWateringDays": 9,
+        "environment": "outdoorContainer",
+        "light": "brightIndirect",
+        "anchorDate": "2026-08-28",
+        "asOfDate": "2026-09-02"
+      },
+      "expected": {
+        "intervalDays": 4,
+        "dueDate": "2026-09-01",
+        "status": "overdue",
+        "title": "Check soil now",
+        "reason": "Based on its starting interval and the fact that it is an outdoor pot can dry faster, bright light can increase water use, it is the warmer part of the year. Feel the soil before watering."
+      }
+    },
+    {
+      "name": "new watering starts a cool-season cycle",
+      "input": {
+        "baselineWateringDays": 9,
+        "environment": "indoor",
+        "light": "medium",
+        "anchorDate": "2026-11-02",
+        "asOfDate": "2026-11-02"
+      },
+      "expected": {
+        "intervalDays": 11,
+        "dueDate": "2026-11-13",
+        "status": "upcoming",
+        "title": "Check soil in 11 days",
+        "reason": "Based on its starting interval and the fact that it is kept indoors, plants often use less water in cooler months. Feel the soil before watering."
+      }
     }
   ]
 }

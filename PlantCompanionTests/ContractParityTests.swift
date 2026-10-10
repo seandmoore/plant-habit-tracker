@@ -2,8 +2,7 @@ import XCTest
 @testable import PlantCompanion
 
 /// Replays the shared golden vectors through this app's planner and checks the rule tables and
-/// generated catalog against `Contract/`. If a care rule changes in only one of the three
-/// codebases, this fails.
+/// generated catalog against `Contract/`. If the native app diverges from the contract, this fails.
 final class ContractParityTests: XCTestCase {
 
     // MARK: - Contract loading

@@ -1,6 +1,6 @@
 # Scanner proxy
 
-This Cloudflare Worker keeps the Pl@ntNet key out of the client apps. It validates image signatures,
+This Cloudflare Worker keeps the Pl@ntNet key out of the native app. It validates image signatures,
 stream-caps uploads at 10 MB, rate-limits *before* reading a request body, charges two tokens for a
 combined species/health request, times out stalled upstream calls, never caches, and returns only the
 normalized shapes published in [`Contract/`](../Contract/README.md).
@@ -35,7 +35,7 @@ POST /v1/identify?mode=…      → ScanCandidate[]  (Contract/scan-candidate.sc
 `unsupported_image_type`, `invalid_content_length`, `image_too_large`, `rate_limited`, `empty_image`,
 `invalid_image_data`, `upstream_unavailable` — and never an upstream body, a stack, or the API key.
 
-The catalog endpoints serve the same curated data the apps bundle, which is what lets care guidance be
+The catalog endpoints serve the same curated data the native app bundles, which is what lets care guidance be
 corrected without an app release. They deliberately do **not** derive care schedules from taxonomy
 records: Pl@ntNet identifies plants, it does not publish trustworthy watering intervals. The Swift
 `ResilientCatalogService` still falls back to its bundled copy whenever this service is absent or empty.

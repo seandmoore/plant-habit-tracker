@@ -13,8 +13,7 @@
       "humidity": "Average to humid",
       "environments": ["indoor", "outdoorContainer"],
       "toxicityNote": "Can irritate people and pets if chewed.",
-      "symbolName": "leaf.fill",
-      "icon": "leaf"
+      "symbolName": "leaf.fill"
     },
     {
       "id": "epipremnum-aureum",
@@ -27,8 +26,7 @@
       "humidity": "Average",
       "environments": ["indoor", "outdoorContainer"],
       "toxicityNote": "Can irritate people and pets if chewed.",
-      "symbolName": "leaf.fill",
-      "icon": "sprout"
+      "symbolName": "leaf.fill"
     },
     {
       "id": "sansevieria-trifasciata",
@@ -41,8 +39,7 @@
       "humidity": "Average to dry",
       "environments": ["indoor", "outdoorContainer"],
       "toxicityNote": "May be harmful to pets if eaten.",
-      "symbolName": "camera.macro",
-      "icon": "grass"
+      "symbolName": "camera.macro"
     },
     {
       "id": "ficus-lyrata",
@@ -55,8 +52,7 @@
       "humidity": "Average to humid",
       "environments": ["indoor", "outdoorContainer"],
       "toxicityNote": "Sap can irritate skin; harmful if eaten.",
-      "symbolName": "leaf.fill",
-      "icon": "tree"
+      "symbolName": "leaf.fill"
     },
     {
       "id": "chlorophytum-comosum",
@@ -69,8 +65,7 @@
       "humidity": "Average",
       "environments": ["indoor", "outdoorContainer"],
       "toxicityNote": null,
-      "symbolName": "camera.macro",
-      "icon": "flower-tulip"
+      "symbolName": "camera.macro"
     },
     {
       "id": "lavandula-angustifolia",
@@ -83,8 +78,7 @@
       "humidity": "Dry with good airflow",
       "environments": ["outdoorContainer", "outdoorGround"],
       "toxicityNote": "Concentrated oils may be harmful if ingested.",
-      "symbolName": "camera.macro",
-      "icon": "flower"
+      "symbolName": "camera.macro"
     },
     {
       "id": "ocimum-basilicum",
@@ -97,8 +91,7 @@
       "humidity": "Average",
       "environments": ["indoor", "outdoorContainer", "outdoorGround"],
       "toxicityNote": null,
-      "symbolName": "leaf.fill",
-      "icon": "leaf"
+      "symbolName": "leaf.fill"
     },
     {
       "id": "solanum-lycopersicum",
@@ -111,8 +104,7 @@
       "humidity": "Average with airflow",
       "environments": ["outdoorContainer", "outdoorGround"],
       "toxicityNote": "Leaves and stems should not be eaten.",
-      "symbolName": "camera.macro",
-      "icon": "food-apple"
+      "symbolName": "camera.macro"
     },
     {
       "id": "rosa",
@@ -125,8 +117,7 @@
       "humidity": "Average with airflow",
       "environments": ["outdoorContainer", "outdoorGround"],
       "toxicityNote": "Thorns can cause injury.",
-      "symbolName": "camera.macro",
-      "icon": "flower-poppy"
+      "symbolName": "camera.macro"
     },
     {
       "id": "acer-palmatum",
@@ -139,8 +130,7 @@
       "humidity": "Average",
       "environments": ["outdoorContainer", "outdoorGround"],
       "toxicityNote": null,
-      "symbolName": "leaf.fill",
-      "icon": "tree-outline"
+      "symbolName": "leaf.fill"
     }
   ]
 }

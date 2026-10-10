@@ -58,7 +58,7 @@ enum CareRules {
         )
     ]
 
-    /// Held here so all three apps word an explanation identically.
+    /// Held here so the native app and its contract word an explanation identically.
     enum Phrasing {
         static let overdueTitle = "Check soil now"
         static let dueTodayTitle = "Check soil today"

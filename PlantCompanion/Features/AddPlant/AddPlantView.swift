@@ -16,6 +16,7 @@ struct AddPlantView: View {
 
     var body: some View {
         @Bindable var model = model
+        let photoPickerTitle = model.photoData == nil ? "Choose photo" : "Change photo"
 
         NavigationStack {
             Form {
@@ -27,7 +28,7 @@ struct AddPlantView: View {
                             symbolName: model.selectedSpecies?.symbolName ?? "leaf.fill"
                         )
                         PhotosPicker(selection: $photoItem, matching: .images) {
-                            Label(model.photoData == nil ? "Choose photo" : "Change photo", systemImage: "photo")
+                            Label(photoPickerTitle, systemImage: "photo")
                         }
                     }
 
@@ -91,8 +92,8 @@ struct AddPlantView: View {
                         .disabled(!model.canSave)
                 }
             }
-            .onChange(of: model.selectedSpeciesID) { previous, _ in
-                model.speciesDidChange(from: previous)
+            .onChange(of: model.selectedSpeciesID) {
+                model.speciesDidChange()
             }
             .onChange(of: photoItem) { _, item in
                 Task { model.setPhoto(from: try? await item?.loadTransferable(type: Data.self)) }

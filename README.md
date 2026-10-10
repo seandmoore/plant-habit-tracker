@@ -17,13 +17,15 @@ on-device companion.
 | --- | --- |
 | [`Contract/`](Contract/README.md) | The shared source of truth: care rules, golden planner vectors, the curated catalog, and the API schemas. |
 | `PlantCompanion/` | The native SwiftUI app for iPhone, iPad, and Mac. |
-| [`ReactMockup/`](ReactMockup/README.md) | An independent Expo/TypeScript preview that runs on web, iOS, and Android. It does not replace the native app. |
 | [`Proxy/`](Proxy/README.md) | A Cloudflare Worker that holds the Pl@ntNet key and serves the catalog. |
 
-The three codebases each need to agree about the same watering rules and the same wire shapes.
-Rather than three hand-maintained copies that can quietly drift apart, `Contract/` owns that data and
-every project asserts against it in its own test suite — so a rule that changes in only one place is a
-failing build, not a silent divergence. See [`Contract/README.md`](Contract/README.md) for how it works.
+The native app and scanner backend share the curated catalog and API response shapes in `Contract/`.
+That directory also owns the native watering rules and golden planner vectors. The native and proxy
+test suites verify their runtime copies against the contract. See
+[`Contract/README.md`](Contract/README.md) for how it works.
+
+`PlantCompanionTests/` contains the native tests, and `Scripts/` contains the Swift catalog generator.
+Node.js is only needed for catalog generation and proxy development; building the native app needs Xcode.
 
 ## What is implemented
 
@@ -34,6 +36,8 @@ failing build, not a silent divergence. See [`Contract/README.md`](Contract/READ
 - Indoor and outdoor plant profiles with light and placement information.
 - Quick watering plus optional amount, unit, date, and notes.
 - Explainable recommendation rules and opt-in local notifications.
+- Care dates stay stable through seasonal changes until the next watering or profile edit; saved
+  opt-in reminders are restored when the app launches.
 - Offline starter catalog and plant discovery.
 - Photo-library scanning on every platform and camera capture on iOS.
 - Demo scan results by default, with a production proxy adapter ready for Pl@ntNet.
@@ -53,8 +57,7 @@ messages. Watering confirmations and success haptics follow a successful save. R
 off custom movement and symbol effects; rows and actions stack when space or larger text requires it.
 The floating companion sits above the iPhone tab bar, with scrolling space reserved around it.
 
-This design is implemented in `PlantCompanion/`. The Expo app in `ReactMockup/` has its own interface;
-it shares the care contract and catalog but does not render or validate the native SwiftUI design.
+This design is implemented in `PlantCompanion/`.
 
 ## Native app architecture
 
@@ -135,7 +138,7 @@ posing as species, and each suite asserts the wording.
 ## AI assistance and safe use
 
 **How this project is built.** Plant Companion is written collaboratively with Codex (OpenAI).
-The current architecture — the shared `Contract/`, all three codebases, and most of the test suite —
+The current architecture — the shared `Contract/`, native app, scanner proxy, and most of the test suite —
 was authored with AI assistance. Every change is reviewed by the maintainer and gated by CI before it
 lands. That is a real filter, but reviewed code is not proven code, and a confident-looking
 explanation from an AI-written rule table is still only as good as the rule table.
@@ -167,7 +170,7 @@ see [`LICENSE`](LICENSE).
 ## Testing
 
 Run these commands from the repository root. Native checks require a Mac with Xcode 26 or newer;
-the Expo and proxy checks use Node.js 22 in CI.
+catalog generation and proxy checks use Node.js 22 in CI.
 
 ```bash
 # Native macOS tests
@@ -178,28 +181,23 @@ xcodebuild test -project PlantCompanion.xcodeproj -scheme PlantCompanion \
 xcodebuild build -project PlantCompanion.xcodeproj -scheme PlantCompanion \
   -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
 
-# Expo preview
-(cd ReactMockup && npm ci --ignore-scripts && npm audit --audit-level=critical && \
-  npm run typecheck && npm test -- --runInBand)
-
 # Worker proxy
 (cd Proxy && npm ci --ignore-scripts && npm audit --audit-level=high && npm test)
 ```
 
-Each suite includes a contract parity test that replays the shared golden vectors and checks its own
-copy of the rules and catalog against `Contract/`.
+The native suite replays the golden planner vectors and checks its rules and catalog against
+`Contract/`. The proxy suite checks catalog parity and validates API responses against the schemas.
 
-After editing `Contract/catalog.json`, regenerate the three runtime copies:
+After editing `Contract/catalog.json`, regenerate both catalog copies:
 
 ```bash
 node Scripts/sync-swift-catalog.mjs
 node Proxy/scripts/sync-catalog.mjs
-node ReactMockup/scripts/sync-catalog.mjs
 ```
 
 The [CI workflow](.github/workflows/ci.yml) runs on pull requests, pushes to `main`, and manual
-dispatch. It checks generated-file drift, Expo typechecking and tests, proxy tests, dependency audit
-thresholds, native macOS tests, and the iPhone/iPad build.
+dispatch. It checks generated-file drift, proxy tests and dependency audits, native macOS tests,
+and the iPhone/iPad build.
 
 Builds and automated tests do not verify the interface's appearance. For design changes, also run the
 native app on a Mac or simulator and check Light/Dark Mode, narrow iPhone layouts, larger text,

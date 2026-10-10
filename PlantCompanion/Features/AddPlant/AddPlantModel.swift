@@ -8,7 +8,9 @@ import Observation
 final class AddPlantModel {
     var catalog: [PlantSpecies] = []
     var selectedSpeciesID: String
-    var nickname = ""
+    var nickname = "" {
+        didSet { usesDefaultNickname = false }
+    }
     var environment: PlantEnvironment = .indoor
     var light: LightLevel = .brightIndirect
     var locationName = ""
@@ -20,6 +22,7 @@ final class AddPlantModel {
 
     /// A species chosen elsewhere — from Discover or a scan — that may not be in the loaded page.
     private var preselected: PlantSpecies?
+    private var usesDefaultNickname = true
 
     init(preselectedSpeciesID: String? = nil) {
         selectedSpeciesID = preselectedSpeciesID ?? ""
@@ -57,17 +60,16 @@ final class AddPlantModel {
     }
 
     /// Keeps the nickname in step with the species until someone types their own.
-    func speciesDidChange(from previousID: String) {
-        let previousName = (pickerOptions.first { $0.id == previousID })?.commonName
-        let trimmed = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmed.isEmpty || trimmed == previousName else { return }
+    func speciesDidChange() {
         applyDefaultNickname()
     }
 
     func applyDefaultNickname() {
         guard let commonName = selectedSpecies?.commonName else { return }
         let trimmed = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty { nickname = commonName }
+        guard usesDefaultNickname || trimmed.isEmpty else { return }
+        nickname = commonName
+        usesDefaultNickname = true
     }
 
     func setPhoto(from data: Data?) {

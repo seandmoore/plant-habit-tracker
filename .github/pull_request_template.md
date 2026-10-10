@@ -4,10 +4,10 @@ Describe the user-facing or developer-facing change.
 
 ## Validation
 
-- [ ] Expo preview typechecked
-- [ ] Expo preview tests passed
+- [ ] Generated catalogs match the contract
 - [ ] Worker proxy tests passed
 - [ ] Native SwiftUI tests passed, or the limitation is explained below
+- [ ] iPhone/iPad simulator build passed, or the limitation is explained below
 
 ## Product and privacy checklist
 
