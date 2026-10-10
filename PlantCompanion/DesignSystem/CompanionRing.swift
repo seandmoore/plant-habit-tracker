@@ -17,6 +17,7 @@ struct CompanionRing: View {
                 .shadow(color: PlantTheme.moss.opacity(0.18), radius: 12, y: 5)
                 .accessibilityLabel("Plant companion")
                 .accessibilityHint("Opens care help and plant questions")
+                .help("Ask your plant companion")
         } else {
             ring.accessibilityHidden(true)
         }
@@ -25,14 +26,16 @@ struct CompanionRing: View {
     private var ring: some View {
         ZStack {
             Circle()
-                .stroke(angularGradient, lineWidth: 5)
+                .stroke(angularGradient, lineWidth: 3)
                 .rotationEffect(.degrees(isSpinning ? 360 : 0))
             Circle()
-                .fill(PlantTheme.mint.opacity(0.34))
+                .fill(PlantTheme.accent.opacity(0.08))
                 .padding(7)
             Image(systemName: state.symbolName)
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(PlantTheme.moss)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(PlantTheme.accent)
+                .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
                 .symbolEffect(.pulse, options: .repeating, isActive: state == .speaking && !reduceMotion)
         }
         .frame(width: 58, height: 58)
@@ -40,13 +43,16 @@ struct CompanionRing: View {
         .onChange(of: shouldSpin, initial: true) { _, spin in
             updateSpin(spin)
         }
+        .onDisappear { updateSpin(false) }
     }
 
     private var shouldSpin: Bool { state == .thinking && !reduceMotion }
 
     private func updateSpin(_ spin: Bool) {
         guard spin else {
-            withAnimation(.linear(duration: 0.2)) { isSpinning = false }
+            var transaction = Transaction(animation: nil)
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { isSpinning = false }
             return
         }
         withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {

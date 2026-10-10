@@ -1,15 +1,21 @@
 import SwiftUI
 
 struct StatusPill: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     let recommendation: CareRecommendation
 
     var body: some View {
         Label(recommendation.title, systemImage: symbolName)
             .font(.caption.weight(.semibold))
+            .symbolRenderingMode(.hierarchical)
             .foregroundStyle(color)
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(color.opacity(0.12), in: Capsule())
+            .background(color.opacity(0.09), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .contentTransition(.opacity)
+            .animation(PlantMotion.animation(reduceMotion: reduceMotion), value: recommendation.title)
     }
 
     private var color: Color {
@@ -21,6 +27,10 @@ struct StatusPill: View {
     }
 
     private var symbolName: String {
-        recommendation.status == .upcoming ? "calendar" : "drop.fill"
+        switch recommendation.status {
+        case .overdue: "drop.circle.fill"
+        case .dueToday: "drop.fill"
+        case .upcoming: "calendar"
+        }
     }
 }

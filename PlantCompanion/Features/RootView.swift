@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @Environment(AppRouter.self) private var router
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     #if os(iOS)
@@ -16,17 +17,15 @@ struct RootView: View {
                 navigation
             } else {
                 OnboardingView {
-                    hasCompletedOnboarding = true
                     router.select(.plants)
+                    withAnimation(PlantMotion.animation(reduceMotion: reduceMotion)) {
+                        hasCompletedOnboarding = true
+                    }
                 }
+                .transition(.opacity)
             }
         }
-        .overlay(alignment: .bottomTrailing) {
-            if hasCompletedOnboarding {
-                CompanionRing(action: { router.presentCompanion() })
-                    .padding(20)
-            }
-        }
+        .tint(PlantTheme.accent)
         .sheet(isPresented: $router.isCompanionPresented) {
             CompanionSheet(plantID: router.companionPlantID)
                 .presentationDetents([.medium, .large])
@@ -52,16 +51,16 @@ struct RootView: View {
 
         return TabView(selection: $router.destination) {
             Tab(AppRouter.Destination.today.title, systemImage: AppRouter.Destination.today.symbolName, value: .today) {
-                TodayView()
+                screen(.today)
             }
             Tab(AppRouter.Destination.plants.title, systemImage: AppRouter.Destination.plants.symbolName, value: .plants) {
-                PlantsView()
+                screen(.plants)
             }
             Tab(AppRouter.Destination.scan.title, systemImage: AppRouter.Destination.scan.symbolName, value: .scan) {
-                ScannerView()
+                screen(.scan)
             }
             Tab(AppRouter.Destination.discover.title, systemImage: AppRouter.Destination.discover.symbolName, value: .discover) {
-                DiscoverView()
+                screen(.discover)
             }
         }
     }
@@ -72,16 +71,30 @@ struct RootView: View {
         return NavigationSplitView {
             List(AppRouter.Destination.allCases, selection: $router.sidebarSelection) { destination in
                 Label(destination.title, systemImage: destination.symbolName)
+                    .symbolRenderingMode(.hierarchical)
                     .tag(destination)
             }
+            .listStyle(.sidebar)
             .navigationTitle("Plant Companion")
+            .navigationSplitViewColumnWidth(min: 200, ideal: 230, max: 280)
         } detail: {
-            switch router.destination {
+            screen(router.destination)
+        }
+    }
+
+    private func screen(_ destination: AppRouter.Destination) -> some View {
+        Group {
+            switch destination {
             case .today: TodayView()
             case .plants: PlantsView()
             case .scan: ScannerView()
             case .discover: DiscoverView()
             }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            // Place the companion inside each tab's safe area, above its native tab bar.
+            CompanionRing(action: { router.presentCompanion() })
+                .padding(16)
         }
     }
 }

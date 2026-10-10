@@ -9,7 +9,7 @@ enum CompanionState: Hashable, Sendable {
 
     var symbolName: String {
         switch self {
-        case .idle: "leaf.fill"
+        case .idle: "bubble.left.and.bubble.right.fill"
         case .thinking: "ellipsis"
         case .speaking: "sparkles"
         }

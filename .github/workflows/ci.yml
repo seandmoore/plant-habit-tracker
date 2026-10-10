@@ -99,3 +99,11 @@ jobs:
       - name: Report native test failures
         if: failure()
         run: xcrun xcresulttool get test-results summary --path NativeTests.xcresult
+
+      - name: Build iPhone and iPad app
+        run: >-
+          xcodebuild build
+          -project PlantCompanion.xcodeproj
+          -scheme PlantCompanion
+          -destination 'generic/platform=iOS Simulator'
+          CODE_SIGNING_ALLOWED=NO

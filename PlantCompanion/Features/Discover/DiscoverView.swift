@@ -2,11 +2,13 @@ import SwiftUI
 
 struct DiscoverView: View {
     @Environment(AppEnvironment.self) private var appEnvironment
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var query = ""
     @State private var results: [PlantSpecies] = []
-    @State private var isSearching = false
+    @State private var isSearching = true
     @State private var errorMessage: String?
+    @State private var activeSearchID: UUID?
 
     var body: some View {
         NavigationStack {
@@ -23,61 +25,127 @@ struct DiscoverView: View {
     @ViewBuilder
     private var content: some View {
         if let errorMessage {
-            ContentUnavailableView(
-                "Catalog unavailable",
-                systemImage: "wifi.exclamationmark",
-                description: Text(errorMessage)
-            )
+            ContentUnavailableView {
+                Label("Catalog unavailable", systemImage: "wifi.exclamationmark")
+            } description: {
+                Text(errorMessage)
+            } actions: {
+                Button("Try again", systemImage: "arrow.clockwise") {
+                    Task { await search() }
+                }
+                .buttonStyle(.bordered)
+                .disabled(isSearching)
+            }
         } else if results.isEmpty && isSearching {
             ProgressView("Searching plants…")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if results.isEmpty {
             ContentUnavailableView.search(text: query)
         } else {
-            List(results) { species in
-                NavigationLink {
-                    SpeciesDetailView(species: species)
-                } label: {
-                    row(for: species)
-                }
-            }
-            .scrollContentBackground(.hidden)
+            catalog
         }
     }
 
-    private func row(for species: PlantSpecies) -> some View {
-        HStack(spacing: 14) {
-            ZStack {
-                Rectangle().fill(PlantTheme.mint.gradient)
-                Image(systemName: species.symbolName)
-                    .foregroundStyle(PlantTheme.moss)
+    private var catalog: some View {
+        List {
+            if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                introduction
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
             }
-            .frame(width: 58, height: 58)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(species.commonName).font(.headline)
+            Section {
+                ForEach(results) { species in
+                    NavigationLink {
+                        SpeciesDetailView(species: species)
+                    } label: {
+                        row(for: species)
+                    }
+                    .listRowBackground(Color.clear)
+                }
+            } header: {
+                HStack {
+                    Text(query.isEmpty ? "Explore the catalog" : "Search results")
+                    Spacer()
+                    if isSearching {
+                        ProgressView()
+                            .controlSize(.small)
+                            .accessibilityLabel("Updating results")
+                    } else {
+                        Text("\(results.count)")
+                            .monospacedDigit()
+                            .accessibilityLabel("\(results.count) plants")
+                    }
+                }
+                .textCase(nil)
+            }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .safeAreaInset(edge: .bottom) {
+            Color.clear
+                .frame(height: PlantTheme.floatingClearance)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
+        .frame(maxWidth: PlantTheme.readableWidth)
+        .frame(maxWidth: .infinity)
+        .animation(PlantMotion.animation(reduceMotion: reduceMotion), value: results.map(\.id))
+    }
+
+    private var introduction: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Grow your plant knowledge", systemImage: "books.vertical.fill")
+                .font(.title2.weight(.semibold))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.primary)
+            Text("Find a familiar leaf or a new favorite. Get to know the light, soil, and care each plant needs.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 16)
+    }
+
+    private func row(for species: PlantSpecies) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            PlantArtwork(imageData: nil, size: 60, symbolName: species.symbolName)
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(species.commonName)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
                 Text(species.scientificName)
                     .font(.subheadline)
                     .italic()
                     .foregroundStyle(.secondary)
                 Text(species.summary)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 10)
+        .accessibilityElement(children: .combine)
     }
 
     private func search() async {
+        let requestID = UUID()
+        activeSearchID = requestID
         isSearching = true
-        defer { isSearching = false }
+        defer {
+            if activeSearchID == requestID { isSearching = false }
+        }
 
         do {
-            results = try await appEnvironment.catalog.search(query: query)
+            let matches = try await appEnvironment.catalog.search(query: query)
+            // Older or cancelled searches must not replace what the user just typed.
+            guard !Task.isCancelled, activeSearchID == requestID else { return }
+            results = matches
             errorMessage = nil
         } catch {
+            guard !Task.isCancelled, activeSearchID == requestID else { return }
             errorMessage = error.localizedDescription
         }
     }

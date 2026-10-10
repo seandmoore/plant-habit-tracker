@@ -23,14 +23,28 @@ struct PlantArtwork: View {
         }
         .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: size * 0.28, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+                .strokeBorder(.primary.opacity(0.06), lineWidth: 1)
+        }
         .accessibilityHidden(true)
     }
 
     private var placeholder: some View {
         ZStack {
-            Rectangle().fill(PlantTheme.mint.gradient)
+            Rectangle()
+                .fill(LinearGradient(
+                    colors: [PlantTheme.mint, PlantTheme.warm],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ))
+            Circle()
+                .fill(PlantTheme.accent.opacity(0.07))
+                .frame(width: size * 0.84, height: size * 0.84)
+                .offset(x: size * 0.29, y: size * 0.28)
             Image(systemName: symbolName)
                 .font(.system(size: size * 0.38, weight: .medium))
+                .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(PlantTheme.moss)
         }
     }
