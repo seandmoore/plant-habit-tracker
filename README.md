@@ -28,6 +28,8 @@ failing build, not a silent divergence. See [`Contract/README.md`](Contract/READ
 ## What is implemented
 
 - Adaptive iPhone/iPad/Mac navigation with native Liquid Glass controls on iOS 26 and macOS 26.
+- Today summaries with separate due and upcoming care checks, plus collection search and a
+  **Needs a check** filter.
 - Local SwiftData storage for plants and care events; no account is required.
 - Indoor and outdoor plant profiles with light and placement information.
 - Quick watering plus optional amount, unit, date, and notes.
@@ -39,6 +41,21 @@ failing build, not a silent divergence. See [`Contract/README.md`](Contract/READ
 - Dynamic Type, VoiceOver labels, keyboard-friendly native controls, Reduce Motion, and system
   contrast/transparency behavior.
 
+## Native interface
+
+The SwiftUI app uses a calm botanical palette that adapts to Light and Dark Mode, rounded system
+typography, and consistent hierarchical SF Symbols. Plant cards, care facts, and status labels share
+the same design components. Native Liquid Glass is used for floating controls and selected actions,
+with tabs on iPhone and a sidebar on iPad and Mac.
+
+Short spring transitions accompany onboarding, collection filters, scan results, and companion
+messages. Watering confirmations and success haptics follow a successful save. Reduce Motion turns
+off custom movement and symbol effects; rows and actions stack when space or larger text requires it.
+The floating companion sits above the iPhone tab bar, with scrolling space reserved around it.
+
+This design is implemented in `PlantCompanion/`. The Expo app in `ReactMockup/` has its own interface;
+it shares the care contract and catalog but does not render or validate the native SwiftUI design.
+
 ## Native app architecture
 
 ```text
@@ -48,7 +65,7 @@ PlantCompanion/
   Core/Persistence/  the SwiftData models and PlantStore, the only place plants are written
   Core/Services/  catalog, identification, companion, and notification implementations
   Features/       one folder per feature, with a model beside the view where there is real logic
-  DesignSystem/   theme, cards, pills, artwork, and the companion ring
+  DesignSystem/   adaptive theme, cards, icons, motion, artwork, and the companion ring
 ```
 
 Three decisions carry most of the weight:
@@ -149,15 +166,24 @@ see [`LICENSE`](LICENSE).
 
 ## Testing
 
+Run these commands from the repository root. Native checks require a Mac with Xcode 26 or newer;
+the Expo and proxy checks use Node.js 22 in CI.
+
 ```bash
-# Native app (requires macOS and Xcode)
-xcodebuild test -project PlantCompanion.xcodeproj -scheme PlantCompanion -destination 'platform=macOS'
+# Native macOS tests
+xcodebuild test -project PlantCompanion.xcodeproj -scheme PlantCompanion \
+  -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
+
+# iPhone/iPad build check (does not run simulator UI tests)
+xcodebuild build -project PlantCompanion.xcodeproj -scheme PlantCompanion \
+  -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
 
 # Expo preview
-cd ReactMockup && npm ci && npm run typecheck && npm test
+(cd ReactMockup && npm ci --ignore-scripts && npm audit --audit-level=critical && \
+  npm run typecheck && npm test -- --runInBand)
 
 # Worker proxy
-cd Proxy && npm ci && npm test
+(cd Proxy && npm ci --ignore-scripts && npm audit --audit-level=high && npm test)
 ```
 
 Each suite includes a contract parity test that replays the shared golden vectors and checks its own
@@ -171,8 +197,14 @@ node Proxy/scripts/sync-catalog.mjs
 node ReactMockup/scripts/sync-catalog.mjs
 ```
 
-CI runs those generators and fails if the committed output has drifted. One workflow runs on a pull
-request: `ci.yml`, which covers the suites above plus the contract drift check.
+The [CI workflow](.github/workflows/ci.yml) runs on pull requests, pushes to `main`, and manual
+dispatch. It checks generated-file drift, Expo typechecking and tests, proxy tests, dependency audit
+thresholds, native macOS tests, and the iPhone/iPad build.
+
+Builds and automated tests do not verify the interface's appearance. For design changes, also run the
+native app on a Mac or simulator and check Light/Dark Mode, narrow iPhone layouts, larger text,
+VoiceOver, keyboard navigation, and Reduce Motion, including changing that setting while the app is
+open. Exercise onboarding, collection filtering, scan states, and watering feedback.
 
 ## Next milestones
 
