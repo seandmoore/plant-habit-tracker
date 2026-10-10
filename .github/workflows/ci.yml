@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   javascript:
-    name: Contract, Expo, and proxy
+    name: Contract and proxy
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -31,35 +31,15 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: |
-            ReactMockup/package-lock.json
-            Proxy/package-lock.json
+          cache-dependency-path: Proxy/package-lock.json
 
       - name: Verify generated files match the contract
         run: |
           node Scripts/sync-swift-catalog.mjs
           node Proxy/scripts/sync-catalog.mjs
-          node ReactMockup/scripts/sync-catalog.mjs
           git diff --exit-code -- \
             PlantCompanion/Core/Services/StarterCatalog.swift \
-            Proxy/src/catalog.mjs \
-            ReactMockup/src/data/catalog.ts
-
-      - name: Install Expo dependencies
-        working-directory: ReactMockup
-        run: npm ci --ignore-scripts
-
-      - name: Audit Expo dependencies
-        working-directory: ReactMockup
-        run: npm audit --audit-level=critical
-
-      - name: Typecheck Expo preview
-        working-directory: ReactMockup
-        run: npm run typecheck
-
-      - name: Test Expo preview
-        working-directory: ReactMockup
-        run: npm test -- --runInBand
+            Proxy/src/catalog.mjs
 
       - name: Install Worker dependencies
         working-directory: Proxy

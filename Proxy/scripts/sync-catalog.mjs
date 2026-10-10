@@ -13,7 +13,7 @@ export function renderCatalogModule(contract) {
 
   return `// Generated from Contract/catalog.json by scripts/sync-catalog.mjs. Do not edit by hand.
 // Serving the curated catalog here means care guidance can be corrected without an app release;
-// it is deliberately the same reviewed data the apps bundle, never care values inferred from taxonomy.
+// it is deliberately the same reviewed data the native app bundles, never care values inferred from taxonomy.
 
 export const CATALOG_VERSION = ${contract.version};
 

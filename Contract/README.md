@@ -1,10 +1,8 @@
 # Contract
 
-Plant Companion ships three codebases — a SwiftUI app, an Expo app, and a Cloudflare Worker — that each
-have to agree about the same plant care rules and the same wire shapes. Before, each one carried its own
-hand-maintained copy of the interval rules and the starter catalog, so the copies could drift apart and
-nothing would notice. This directory is the single source of truth, and every project asserts against it
-in its own test suite.
+This directory is the source of truth for the native SwiftUI app and its Cloudflare Worker backend.
+It defines the shared catalog and API response shapes, plus the native app’s watering rules and golden
+planner vectors. Each project verifies the data it uses in its own test suite.
 
 ## Files
 
@@ -12,28 +10,34 @@ in its own test suite.
 | --- | --- |
 | `care-rules.json` | Watering-check interval modifiers, bounds, season windows, and the exact user-facing phrasing. |
 | `recommendation-vectors.json` | Golden input/output vectors that every planner implementation must reproduce exactly. |
-| `catalog.json` | The curated starter species, including the per-platform icon name each app renders. |
+| `catalog.json` | The curated starter species, including the SF Symbol rendered by the native app. |
 | `scan-candidate.schema.json` | Response shape of `POST /v1/identify`. |
 | `species.schema.json` | Response shape of `GET /v1/plants` and `GET /v1/plants/{id}`. |
 
 ## How the projects use it
 
-Each project keeps its own runtime copy of this data in its native format, so all three stay
-independently buildable and deployable with no cross-directory build coupling:
+The app and proxy each keep a generated catalog in their runtime format, so both remain independently
+buildable with no cross-directory build coupling:
 
-- `PlantCompanion/Resources/StarterCatalog.json` — bundled resource decoded at launch.
-- `ReactMockup/src/data/catalog.ts` — a typed module.
+- `PlantCompanion/Core/Services/StarterCatalog.swift` — Swift source compiled into the native app.
 - `Proxy/src/catalog.mjs` — served by `GET /v1/plants`.
+
+The native planner’s rule table is in `PlantCompanion/Core/Domain/CareRules.swift`; native tests compare
+it with `care-rules.json` and replay `recommendation-vectors.json`.
 
 Parity is enforced at **test** time instead. Each suite reads the files here over a relative path and
 fails if its runtime copy has drifted:
 
 - `PlantCompanionTests/ContractParityTests.swift`
-- `ReactMockup/src/domain/contract.test.ts`
 - `Proxy/test/contract.test.mjs`
 
-Change a rule or a species here first, then update the three runtime copies until the parity tests pass
-again. A change that lands in only one project is a failing build, not a silent divergence.
+Change a rule or a species here first, then update the corresponding runtime definitions until the
+parity tests pass. After editing `catalog.json`, regenerate both catalog copies from the repository root:
+
+```bash
+node Scripts/sync-swift-catalog.mjs
+node Proxy/scripts/sync-catalog.mjs
+```
 
 ## Rules encoded in `care-rules.json`
 
@@ -48,8 +52,8 @@ The result is clamped to `bounds`, added to the anchor date (the most recent wat
 plant was added), and compared against the current day to produce `overdue` / `dueToday` / `upcoming`.
 
 Every factor that moved the number contributes its `factor` phrase to the explanation, which is why the
-app can always say *why* a date is what it is. `phrasing` holds those strings so the three apps word the
-explanation identically.
+app can always say *why* a date is what it is. `phrasing` holds those strings so the native planner’s
+explanations can be checked against the contract.
 
 ## Product guardrails these files carry
 

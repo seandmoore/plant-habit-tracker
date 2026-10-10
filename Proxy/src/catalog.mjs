@@ -1,6 +1,6 @@
 // Generated from Contract/catalog.json by scripts/sync-catalog.mjs. Do not edit by hand.
 // Serving the curated catalog here means care guidance can be corrected without an app release;
-// it is deliberately the same reviewed data the apps bundle, never care values inferred from taxonomy.
+// it is deliberately the same reviewed data the native app bundles, never care values inferred from taxonomy.
 
 export const CATALOG_VERSION = 1;
 
@@ -19,8 +19,7 @@ export const catalog = [
       "outdoorContainer"
     ],
     toxicityNote: "Can irritate people and pets if chewed.",
-    symbolName: "leaf.fill",
-    icon: "leaf"
+    symbolName: "leaf.fill"
   },
   {
     id: "epipremnum-aureum",
@@ -36,8 +35,7 @@ export const catalog = [
       "outdoorContainer"
     ],
     toxicityNote: "Can irritate people and pets if chewed.",
-    symbolName: "leaf.fill",
-    icon: "sprout"
+    symbolName: "leaf.fill"
   },
   {
     id: "sansevieria-trifasciata",
@@ -53,8 +51,7 @@ export const catalog = [
       "outdoorContainer"
     ],
     toxicityNote: "May be harmful to pets if eaten.",
-    symbolName: "camera.macro",
-    icon: "grass"
+    symbolName: "camera.macro"
   },
   {
     id: "ficus-lyrata",
@@ -70,8 +67,7 @@ export const catalog = [
       "outdoorContainer"
     ],
     toxicityNote: "Sap can irritate skin; harmful if eaten.",
-    symbolName: "leaf.fill",
-    icon: "tree"
+    symbolName: "leaf.fill"
   },
   {
     id: "chlorophytum-comosum",
@@ -87,8 +83,7 @@ export const catalog = [
       "outdoorContainer"
     ],
     toxicityNote: null,
-    symbolName: "camera.macro",
-    icon: "flower-tulip"
+    symbolName: "camera.macro"
   },
   {
     id: "lavandula-angustifolia",
@@ -104,8 +99,7 @@ export const catalog = [
       "outdoorGround"
     ],
     toxicityNote: "Concentrated oils may be harmful if ingested.",
-    symbolName: "camera.macro",
-    icon: "flower"
+    symbolName: "camera.macro"
   },
   {
     id: "ocimum-basilicum",
@@ -122,8 +116,7 @@ export const catalog = [
       "outdoorGround"
     ],
     toxicityNote: null,
-    symbolName: "leaf.fill",
-    icon: "leaf"
+    symbolName: "leaf.fill"
   },
   {
     id: "solanum-lycopersicum",
@@ -139,8 +132,7 @@ export const catalog = [
       "outdoorGround"
     ],
     toxicityNote: "Leaves and stems should not be eaten.",
-    symbolName: "camera.macro",
-    icon: "food-apple"
+    symbolName: "camera.macro"
   },
   {
     id: "rosa",
@@ -156,8 +148,7 @@ export const catalog = [
       "outdoorGround"
     ],
     toxicityNote: "Thorns can cause injury.",
-    symbolName: "camera.macro",
-    icon: "flower-poppy"
+    symbolName: "camera.macro"
   },
   {
     id: "acer-palmatum",
@@ -173,8 +164,7 @@ export const catalog = [
       "outdoorGround"
     ],
     toxicityNote: null,
-    symbolName: "leaf.fill",
-    icon: "tree-outline"
+    symbolName: "leaf.fill"
   }
 ];
 

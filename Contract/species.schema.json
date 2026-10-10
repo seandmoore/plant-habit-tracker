@@ -22,8 +22,7 @@
         "items": { "enum": ["indoor", "outdoorContainer", "outdoorGround"] }
       },
       "toxicityNote": { "type": ["string", "null"] },
-      "symbolName": { "type": "string", "description": "SF Symbol used by the native app." },
-      "icon": { "type": "string", "description": "MaterialCommunityIcons glyph used by the Expo app." }
+      "symbolName": { "type": "string", "description": "SF Symbol used by the native app." }
     }
   }
 }
