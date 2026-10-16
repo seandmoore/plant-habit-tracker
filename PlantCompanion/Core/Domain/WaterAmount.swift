@@ -8,7 +8,7 @@ enum WaterAmount {
         let normalized = input
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .replacingOccurrences(of: ",", with: ".")
-        guard let value = Double(normalized), value > 0 else { return nil }
+        guard let value = Double(normalized), value.isFinite, value > 0 else { return nil }
         return value
     }
 }

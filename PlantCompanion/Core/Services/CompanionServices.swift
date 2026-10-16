@@ -12,7 +12,7 @@ struct ScriptedCompanionService: CompanionService {
 
         let question = prompt.question.lowercased()
         let name = prompt.plantName ?? "your plant"
-        let facts = prompt.groundedFacts.prefix(2).joined(separator: " ")
+        let facts = prompt.groundedFacts.joined(separator: " ")
 
         if question.contains("water") || question.contains("dry") {
             return "For \(name), use the care check date as a reminder—not a command. Feel the soil first, then water thoroughly if the root zone is appropriately dry. \(facts)"

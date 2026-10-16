@@ -37,8 +37,8 @@ actor LocalNotificationScheduler: NotificationScheduling {
             .removePendingNotificationRequests(withIdentifiers: [Self.identifier(for: plantID)])
     }
 
-    /// A due date already in the past would never fire, so an overdue plant is nudged tomorrow
-    /// morning instead of silently dropping its reminder.
+    /// An overdue plant uses the next chosen reminder hour. Keeping today's hour when it is
+    /// still ahead prevents launch restoration from postponing a pending reminder again.
     func fireDate(for request: WateringReminderRequest, now: Date = .now) -> Date {
         let preferred = calendar.date(
             bySettingHour: request.hour,
@@ -48,6 +48,11 @@ actor LocalNotificationScheduler: NotificationScheduling {
         ) ?? request.dueDate
 
         guard preferred <= now else { return preferred }
+
+        if let today = calendar.date(bySettingHour: request.hour, minute: 0, second: 0, of: now),
+           today > now {
+            return today
+        }
 
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: now) ?? now
         return calendar.date(bySettingHour: request.hour, minute: 0, second: 0, of: tomorrow) ?? tomorrow
