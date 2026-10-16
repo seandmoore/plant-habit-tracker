@@ -58,7 +58,7 @@ final class CompanionConversationRegressionTests: XCTestCase {
         await pause.complete(2)
         await second.value
         XCTAssertEqual(conversation.state, .idle)
-        XCTAssertFalse(conversation.messages.contains(.failure))
+        XCTAssertEqual(conversation.messages.dropFirst().map(\.text), ["first", "First answer", "second", "Second answer"])
     }
 
     func testCancelledRequestDiscardsALateServiceReplyAndReleasesBusyState() async {
@@ -97,7 +97,8 @@ final class CompanionConversationRegressionTests: XCTestCase {
         await service.complete("first", with: .failure(ControlledCompanionService.Failure.unavailable))
         await first.value
         XCTAssertEqual(conversation.state, .idle)
-        XCTAssertEqual(conversation.messages.last, .failure)
+        XCTAssertEqual(conversation.messages.last?.role, .companion)
+        XCTAssertEqual(conversation.messages.last?.text, CompanionMessage.failure.text)
 
         let retry = Task { await ask("retry", conversation: conversation, service: service) }
         await service.waitForRequest("retry")
@@ -105,6 +106,26 @@ final class CompanionConversationRegressionTests: XCTestCase {
         await retry.value
         XCTAssertEqual(conversation.state, .idle)
         XCTAssertEqual(conversation.messages.last?.text, "Recovered")
+    }
+
+    func testSuccessiveFailuresHaveDistinctTranscriptIdentities() async {
+        let service = ControlledCompanionService(questions: ["first", "retry"])
+        let conversation = CompanionConversation(speakingPause: {})
+
+        for question in ["first", "retry"] {
+            let request = Task { await ask(question, conversation: conversation, service: service) }
+            await service.waitForRequest(question)
+            await service.complete(question, with: .failure(ControlledCompanionService.Failure.unavailable))
+            await request.value
+        }
+
+        let replies = conversation.messages.dropFirst().filter { $0.role == .companion }
+        XCTAssertEqual(replies.count, 2)
+        XCTAssertTrue(replies.allSatisfy { $0.text == CompanionMessage.failure.text })
+        XCTAssertEqual(conversation.messages.count, 5)
+        XCTAssertEqual(Set(conversation.messages.map(\.id)).count, conversation.messages.count)
+        XCTAssertEqual(conversation.state, .idle)
+        XCTAssertFalse(conversation.isBusy)
     }
 
     func testBlankQuestionsAreIgnoredWithoutCallingTheService() async {

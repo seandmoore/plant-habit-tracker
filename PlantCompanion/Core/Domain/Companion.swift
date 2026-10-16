@@ -30,10 +30,13 @@ struct CompanionMessage: Identifiable, Hashable, Sendable {
         text: "Hi, I’m here to make plant care feel calm and understandable. Ask me about today’s care checks or one of your plants."
     )
 
-    static let failure = CompanionMessage(
-        role: .companion,
-        text: "I couldn’t prepare that answer just now. Your plant records are still safe, and you can try again."
-    )
+    // Each failure is a new transcript row, even when its wording is unchanged.
+    static var failure: CompanionMessage {
+        CompanionMessage(
+            role: .companion,
+            text: "I couldn’t prepare that answer just now. Your plant records are still safe, and you can try again."
+        )
+    }
 }
 
 /// A reminder to inspect a plant. Never a command to water it.
